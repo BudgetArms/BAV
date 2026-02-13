@@ -16,5 +16,4 @@ add_subdirectory(ThirdParty/GLFW)
 
 add_executable(${PROJECT_NAME} BAV/main.cpp)
 
-target_link_directories(${PROJECT_NAME} PRIVATE glfw)
-#target_include_directories(${PROJECT_NAME} PRIVATE ThirdParty/GLFW/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
