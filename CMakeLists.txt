@@ -36,7 +36,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 
-add_executable(${PROJECT_NAME} BAV/main.cpp)
+add_executable(
+        ${PROJECT_NAME}
+        BAV/main.cpp
+        BAV/VulkanApplication.cpp
+)
 
 
 # Link libraries
