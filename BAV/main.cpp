@@ -4,6 +4,11 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+// Include Visual Leak Detector
+#if _DEBUG && __has_include(<vld.h>)
+    #include <vld.h>
+#endif
+
 
 int main()
 {
