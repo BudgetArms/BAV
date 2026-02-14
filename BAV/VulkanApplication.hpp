@@ -1,4 +1,7 @@
 #pragma once
+#include <string>
+
+class GLFWwindow;
 
 namespace BAV
 {
@@ -11,6 +14,12 @@ namespace BAV
         void InitVulkan();
         void MainLoop();
         void CleanUp();
+
+        GLFWwindow* m_Window;
+
+        const int m_Width{ 800 };
+        const int m_Height{ 600 };
+        const std::string m_Title{ "HelloTriangle" };
 
     };
 }

@@ -1,7 +1,4 @@
 #include <iostream>
-#include <stdexcept>
-
-#include <vulkan/vulkan.hpp>
 
 #include "VulkanApplication.hpp"
 
