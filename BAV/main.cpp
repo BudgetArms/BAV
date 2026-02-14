@@ -12,8 +12,24 @@ int main()
         return 1;
     }
 
-    glm::vec3 testGlm = glm::vec3(0.0f, 1.0f, 2.0f);
-    std::cout << testGlm.x << testGlm.y << testGlm.z << "\n";
+    GLFWwindow* window = glfwCreateWindow(800.f, 600.f, "GLFW Window", nullptr, nullptr);
+    if (!window)
+    {
+        std::cerr << "Failed to create GLFW window!" << "\n";
+        glfwTerminate();
+
+        return 1;
+    }
+
+    // Event loop
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+    }
+
+    // Destroy window
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
 }
