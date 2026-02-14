@@ -7,13 +7,26 @@ project(BAV)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(ThirdParty/GLFW)
+include(FetchContent)
+
+# Add GLFW
+FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG 3.4
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glfw)
+
+
+
 
 add_executable(${PROJECT_NAME} BAV/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+
+target_include_directories(${PROJECT_NAME} PRIVATE glfw)
+
+
