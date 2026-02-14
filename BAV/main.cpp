@@ -1,6 +1,9 @@
 #include <iostream>
+
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+
 
 int main()
 {
@@ -12,6 +15,10 @@ int main()
         return 1;
     }
 
+    // No clue what these arguments do
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    // Create GLFW Window
     GLFWwindow* window = glfwCreateWindow(800.f, 600.f, "GLFW Window", nullptr, nullptr);
     if (!window)
     {
@@ -20,6 +27,13 @@ int main()
 
         return 1;
     }
+
+    // Get extension count
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::cout << "Total Extensions: " << extensionCount << "\n";
+
 
     // Event loop
     while (!glfwWindowShouldClose(window))
