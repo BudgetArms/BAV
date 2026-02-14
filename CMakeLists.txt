@@ -37,11 +37,22 @@ FetchContent_MakeAvailable(glm)
 
 add_executable(${PROJECT_NAME} BAV/main.cpp)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
-target_link_libraries(${PROJECT_NAME} PRIVATE glm)
-target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 
-target_include_directories(${PROJECT_NAME} PRIVATE glfw)
-target_include_directories(${PROJECT_NAME} PRIVATE glm)
+# Link libraries
+target_link_libraries(
+        ${PROJECT_NAME}
+        PRIVATE
+        glfw
+        glm
+        Vulkan::Vulkan
+)
 
+
+# Include directories
+target_include_directories(
+        ${PROJECT_NAME}
+        PRIVATE
+        glfw
+        glm
+)
 
