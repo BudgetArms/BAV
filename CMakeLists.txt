@@ -11,10 +11,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Get Vulkan SDK
 find_package(Vulkan REQUIRED)
 
-# Get VLD (suppress messages if not found)
-# https://github.com/avadae/vld
-find_package(VLD QUIET)
-
 
 include(FetchContent)
 
@@ -61,19 +57,3 @@ target_include_directories(
         glm
 )
 
-
-if(VLD_FOUND)
-
-    target_link_libraries(
-            ${PROJECT_NAME}
-            PRIVATE
-            ${VLD_LIBRARIES}
-    )
-
-    target_include_directories(
-            ${PROJECT_NAME}
-            PRIVATE
-            ${VLD_INCLUDE_DIRS}
-    )
-
-endif()
