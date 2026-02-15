@@ -13,13 +13,16 @@ namespace BAV
     public:
         void Run();
 
-        bool CheckValidationLayerSupport() const;
 
     private:
         void InitVulkan();
         void CreateInstance();
         void MainLoop();
         void CleanUp();
+
+        bool CheckValidationLayerSupport() const;
+
+        static std::vector<const char*> GetRequiredExtensions();
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};

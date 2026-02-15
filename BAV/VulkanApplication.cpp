@@ -67,6 +67,35 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
     return foundAllLayers;
 }
 
+std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    // Get Vulkan Extensions & ExtensionsCount
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    if (!glfwExtensions)
+    {
+        throw std::runtime_error("No extensions found");
+    }
+
+    if (glfwExtensionCount == 0)
+    {
+        throw std::runtime_error("ExtensionCount is zero");
+    }
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (g_bEnableValidationLayers)
+    {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
+
 void BAV::VulkanApplication::InitVulkan()
 {
     if (!glfwInit())
@@ -104,26 +133,11 @@ void BAV::VulkanApplication::CreateInstance()
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &applicationInfo;
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    // Get Vulkan Extensions & ExtensionsCount
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    if (!glfwExtensions)
-    {
-        throw std::runtime_error("No extensions found");
-    }
-
-    if (glfwExtensionCount == 0)
-    {
-        throw std::runtime_error("ExtensionCount is zero");
-    }
-
+    const std::vector<const char*> requiredExtensions = GetRequiredExtensions();
 
     // Fill in instance create info
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
     // outside the if-statement below, because of local scope
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
@@ -173,16 +187,6 @@ void BAV::VulkanApplication::CreateInstance()
 
 void BAV::VulkanApplication::MainLoop()
 {
-    VkInstanceCreateInfo createInfo{};
-    VkInstance testInstance{};
-
-    // logs in debug, doesn't log in release; because of validation layers
-    vkCreateInstance(&createInfo, nullptr, nullptr);
-
-    // random test
-    vkCreateInstance(&createInfo, nullptr, &testInstance);
-    std::cout << testInstance << '\n';
-
     while (!glfwWindowShouldClose(m_Window))
     {
         glfwPollEvents();
