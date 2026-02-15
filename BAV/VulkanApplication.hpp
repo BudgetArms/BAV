@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+#include <vulkan/vulkan.h>
+
 class GLFWwindow;
 
 namespace BAV
@@ -12,10 +14,12 @@ namespace BAV
 
     private:
         void InitVulkan();
+        void CreateInstance();
         void MainLoop();
         void CleanUp();
 
-        GLFWwindow* m_Window;
+        GLFWwindow* m_Window{};
+        VkInstance m_Instance{};
 
         const int m_Width{ 800 };
         const int m_Height{ 600 };

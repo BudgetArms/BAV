@@ -14,7 +14,9 @@ int main()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Error: "  << e.what() << '\n';
+        std::cerr << "Catched Error: "  << e.what() << '\n';
+        std::cin.get();
+
         return 1;
     }
 
