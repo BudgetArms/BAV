@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 #include <vulkan/vulkan.h>
 
@@ -11,6 +12,8 @@ namespace BAV
     {
     public:
         void Run();
+
+        bool CheckValidationLayerSupport() const;
 
     private:
         void InitVulkan();
@@ -24,6 +27,12 @@ namespace BAV
         const int m_Width{ 800 };
         const int m_Height{ 600 };
         const std::string m_Title{ "HelloTriangle" };
+
+        const std::vector<std::string> m_ValidationLayers =
+        {
+            "VK_LAYER_KHRONOS_validation"
+        };
+
 
     };
 }
