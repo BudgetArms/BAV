@@ -20,6 +20,13 @@
 
 void BAV::VulkanApplication::Run()
 {
+#ifdef NDEBUG
+    std::cout << "RELEASE\n" << '\n';
+#else
+    std::cout << "DEBUG\n" << '\n';
+#endif
+
+
     InitVulkan();
     CreateInstance();
 
@@ -118,7 +125,7 @@ void BAV::VulkanApplication::CreateInstance()
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
 
-    // outside if, because of local scope
+    // outside the if-statement below, because of local scope
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
 
     if (g_bEnableValidationLayers)
@@ -166,6 +173,16 @@ void BAV::VulkanApplication::CreateInstance()
 
 void BAV::VulkanApplication::MainLoop()
 {
+    VkInstanceCreateInfo createInfo{};
+    VkInstance testInstance{};
+
+    // logs in debug, doesn't log in release; because of validation layers
+    vkCreateInstance(&createInfo, nullptr, nullptr);
+
+    // random test
+    vkCreateInstance(&createInfo, nullptr, &testInstance);
+    std::cout << testInstance << '\n';
+
     while (!glfwWindowShouldClose(m_Window))
     {
         glfwPollEvents();
