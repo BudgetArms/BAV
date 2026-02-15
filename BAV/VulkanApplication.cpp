@@ -9,6 +9,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "ConversionHelpers.hpp"
+
 #ifdef NDEBUG
     constexpr bool g_bEnableValidationLayers = false;
 #else
@@ -116,8 +118,19 @@ void BAV::VulkanApplication::CreateInstance()
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
 
-    // This is about the global validation layers, I don't know more (yet)
-    createInfo.enabledLayerCount = 0;
+    // outside if, because of local scope
+    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
+
+    if (g_bEnableValidationLayers)
+    {
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(m_ValidationLayers.size());
+        createInfo.ppEnabledLayerNames = charValidationLayers.data();
+    }
+    else
+    {
+        // If not debugging, don't add any validation layers
+        createInfo.enabledLayerCount = 0;
+    }
 
 
     // Get Vulkan ExtensionCount

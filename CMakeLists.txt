@@ -41,6 +41,7 @@ add_executable(
         ${PROJECT_NAME}
         BAV/main.cpp
         BAV/VulkanApplication.cpp
+        BAV/ConversionHelpers.cpp
 )
 
 
