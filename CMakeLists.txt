@@ -42,6 +42,8 @@ add_executable(
         BAV/main.cpp
         BAV/VulkanApplication.cpp
         BAV/ConversionHelpers.cpp
+        BAV/CreationHelper.cpp
+        BAV/CreationHelper.hpp
 )
 
 
