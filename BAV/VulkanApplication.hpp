@@ -46,9 +46,8 @@ namespace BAV
         void CleanUp();
 
         void SetupDebugMessenger();
-
-
         void PickPhysicalDevice();
+
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
         [[nodiscard]] static bool IsDeviceSuitable(VkPhysicalDevice device);

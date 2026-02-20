@@ -35,101 +35,6 @@ void BAV::VulkanApplication::Run()
     CleanUp();
 }
 
-bool BAV::VulkanApplication::CheckValidationLayerSupport() const
-{
-    uint32_t layerCount = 0;
-    VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("Couldn't get layer count");
-    }
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    result = vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("Couldn't get layer properties");
-    }
-
-
-    // if all validations layers are available, then return true
-    const bool foundAllLayers = std::ranges::all_of(m_ValidationLayers, [&](const std::string& validationLayer)
-    {
-       return std::ranges::any_of(availableLayers, [&validationLayer](const VkLayerProperties& layerProperty)
-       {
-            return validationLayer == layerProperty.layerName;
-       });
-    });
-
-    return foundAllLayers;
-}
-
-bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
-{
-    const QueueFamilyIndices indices = FindQueueFamilies(device);
-    return indices.IsValid();
-}
-
-std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
-{
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    // Get Vulkan Extensions & ExtensionsCount
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    if (!glfwExtensions)
-    {
-        throw std::runtime_error("No extensions found");
-    }
-
-    if (glfwExtensionCount == 0)
-    {
-        throw std::runtime_error("ExtensionCount is zero");
-    }
-
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    if (g_bEnableValidationLayers)
-    {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
-}
-
-BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device)
-{
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
-
-
-    // Get the right QueueFamily that has graphics_bit enabled
-    int i = 0;
-    for (const auto& queueFamilyProperty : queueFamilyProperties)
-    {
-        if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.GraphicsFamily = i;
-        }
-
-        if (indices.IsValid())
-        {
-            break;
-        }
-
-        ++i;
-    }
-
-    return indices;
-}
 
 VkBool32 BAV::VulkanApplication::DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
@@ -330,6 +235,7 @@ void BAV::VulkanApplication::CleanUp()
     glfwTerminate();
 }
 
+
 void BAV::VulkanApplication::SetupDebugMessenger()
 {
     if (!g_bEnableValidationLayers)
@@ -354,7 +260,6 @@ void BAV::VulkanApplication::SetupDebugMessenger()
 
 
 }
-
 
 void BAV::VulkanApplication::PickPhysicalDevice()
 {
@@ -392,3 +297,101 @@ void BAV::VulkanApplication::PickPhysicalDevice()
     }
 
 }
+
+
+bool BAV::VulkanApplication::CheckValidationLayerSupport() const
+{
+    uint32_t layerCount = 0;
+    VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Couldn't get layer count");
+    }
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    result = vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Couldn't get layer properties");
+    }
+
+
+    // if all validations layers are available, then return true
+    const bool foundAllLayers = std::ranges::all_of(m_ValidationLayers, [&](const std::string& validationLayer)
+    {
+       return std::ranges::any_of(availableLayers, [&validationLayer](const VkLayerProperties& layerProperty)
+       {
+            return validationLayer == layerProperty.layerName;
+       });
+    });
+
+    return foundAllLayers;
+}
+
+bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
+{
+    const QueueFamilyIndices indices = FindQueueFamilies(device);
+    return indices.IsValid();
+}
+
+std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    // Get Vulkan Extensions & ExtensionsCount
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    if (!glfwExtensions)
+    {
+        throw std::runtime_error("No extensions found");
+    }
+
+    if (glfwExtensionCount == 0)
+    {
+        throw std::runtime_error("ExtensionCount is zero");
+    }
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (g_bEnableValidationLayers)
+    {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
+BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
+
+
+    // Get the right QueueFamily that has graphics_bit enabled
+    int i = 0;
+    for (const auto& queueFamilyProperty : queueFamilyProperties)
+    {
+        if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.GraphicsFamily = i;
+        }
+
+        if (indices.IsValid())
+        {
+            break;
+        }
+
+        ++i;
+    }
+
+    return indices;
+}
+
