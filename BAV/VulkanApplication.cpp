@@ -112,7 +112,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
     // Diagnostic message
 
     // VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-    // Informational message (eg. creation of a resource), kind of verbose
+    // Informational message (e.g. creation of a resource), kind of verbose
 
     // VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
     // Message about behavior that is problably a bug, but might be an error
@@ -145,8 +145,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
 
 
     // pUserData:
-
-    // idk what it means
+    // IDK what this means
 
     // Vulkan Documentation:
     // pUserData is the application-defined user data pointer,
@@ -168,12 +167,6 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
     // However, this is (normallY) only used to test the validation layers.
     // So, always return with 'VK_FALSE'.
 
-
-    // Severity: Warning
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-    {
-
-    }
 
     return VK_FALSE;
 }
@@ -225,16 +218,21 @@ void BAV::VulkanApplication::CreateInstance()
     // outside the if-statement below, because of local scope
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
 
+
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (g_bEnableValidationLayers)
     {
-        // createInfo.enabledExtensionCount = static_cast<uint32_t>(m_ValidationLayers.size());
-        createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
+        createInfo.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
         createInfo.ppEnabledLayerNames = charValidationLayers.data();
+
+        CreationHelper::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+        createInfo.pNext = &debugCreateInfo;
     }
     else
     {
         // If not debugging, don't add any validation layers
         createInfo.enabledLayerCount = 0;
+        createInfo.pNext = nullptr;
     }
 
 
@@ -247,17 +245,17 @@ void BAV::VulkanApplication::CreateInstance()
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
     // Print extension names
-    std::cout << "Available extensions:" << '\n';
-
-    for (const auto& extension: extensions)
-        std::cout << '\t' << extension.extensionName << '\n';
-
-    std::cout << '\n';
+    // std::cout << "Available extensions:" << '\n';
+    //
+    // for (const auto& extension: extensions)
+    //     std::cout << '\t' << extension.extensionName << '\n';
+    //
+    // std::cout << '\n';
 
 
     // Create Vulkan Instance
     // We don't have a custom allocator (for now/yet??)
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance);
+    const VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance);
 
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
     {
@@ -297,22 +295,7 @@ void BAV::VulkanApplication::SetupDebugMessenger()
         return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity =
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType =
-        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-        | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-        | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-
-    // Linked to function
-    createInfo.pfnUserCallback = DebugCallback;
-
-    // (optional), I don't really see a proper use-case for it
-    // but that might change in the future
-    createInfo.pUserData = nullptr;
+    CreationHelper::PopulateDebugMessengerCreateInfo(createInfo);
 
 
     const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr,

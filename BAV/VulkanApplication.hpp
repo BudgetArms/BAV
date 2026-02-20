@@ -14,6 +14,13 @@ namespace BAV
         void Run();
 
 
+        static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT             messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+            void*                                       pUserData
+            );
+
     private:
         void InitVulkan();
         void CreateInstance();
@@ -26,12 +33,6 @@ namespace BAV
 
         static std::vector<const char*> GetRequiredExtensions();
 
-        static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT             messageType,
-            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-            void*                                       pUserData
-            );
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
