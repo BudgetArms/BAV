@@ -12,7 +12,15 @@ namespace BAV
 {
     struct QueueFamilyIndices
     {
+    public:
         std::optional<uint32_t> GraphicsFamily;
+
+        [[nodiscard]] bool IsValid() const
+        {
+            return GraphicsFamily.has_value();
+        }
+
+
     };
 
     class VulkanApplication
@@ -47,7 +55,7 @@ namespace BAV
 
         static std::vector<const char*> GetRequiredExtensions();
 
-        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+        [[nodiscard]] static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 
 
         GLFWwindow* m_Window{};

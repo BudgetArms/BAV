@@ -68,15 +68,8 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 
 bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
 {
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-    // needs to be a gpu & support the geomtryshader
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
-        && deviceFeatures.geometryShader;
+    const QueueFamilyIndices indices = FindQueueFamilies(device);
+    return indices.IsValid();
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
@@ -118,13 +111,18 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
 
 
-    // get the right QueueFamily that has graphics_bit enabled
+    // Get the right QueueFamily that has graphics_bit enabled
     int i = 0;
     for (const auto& queueFamilyProperty : queueFamilyProperties)
     {
         if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.GraphicsFamily = i;
+        }
+
+        if (indices.IsValid())
+        {
+            break;
         }
 
         ++i;
