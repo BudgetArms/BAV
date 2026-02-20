@@ -47,6 +47,7 @@ namespace BAV
 
         void SetupDebugMessenger();
         void PickPhysicalDevice();
+        void CreateLocalDevice();
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
@@ -59,6 +60,8 @@ namespace BAV
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
+        VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+        VkDevice m_Device = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         const int m_Width{ 800 };

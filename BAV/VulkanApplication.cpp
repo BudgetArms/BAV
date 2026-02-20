@@ -75,7 +75,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
     // pCallback:
 
     // Refers to VkDebugUtilsMessengerCallbackDataEXT
-    // This contains details of the message
+    // This contains the details of the message
 
     // Like:
     // pMessage: Debug message
@@ -143,27 +143,29 @@ void BAV::VulkanApplication::CreateInstance()
         throw std::runtime_error("Validation layers are required, but not available");
     }
 
-    VkApplicationInfo applicationInfo{};
-    applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    applicationInfo.pApplicationName = m_Title.c_str();
-    applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);  // Developer Specified
-    applicationInfo.pEngineName = "What is an Engine";              // If you have an engine???
-    applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);       // Don't have one
-    applicationInfo.apiVersion = VK_API_VERSION_1_4;                // The minimum Vulkan version that is required
-
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &applicationInfo;
+    VkApplicationInfo applicationInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = m_Title.c_str(),
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),  // Developer Specified
+        .pEngineName = "What is an Engine",              // If you have an engine???
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),       // Don't have one
+        .apiVersion = VK_API_VERSION_1_4,                // The minimum Vulkan version that is required
+    };
 
     const std::vector<const char*> requiredExtensions = GetRequiredExtensions();
 
-    // Fill in instance create info
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+    VkInstanceCreateInfo createInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo = &applicationInfo,
+
+        .enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
+        .ppEnabledExtensionNames = requiredExtensions.data()
+    };
 
     // outside the if-statement below, because of local scope
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
-
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (g_bEnableValidationLayers)
@@ -228,6 +230,8 @@ void BAV::VulkanApplication::CleanUp()
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
 
+    vkDestroyDevice(m_Device, nullptr);
+
     vkDestroyInstance(m_Instance, nullptr);
 
     glfwDestroyWindow(m_Window);
@@ -263,7 +267,7 @@ void BAV::VulkanApplication::SetupDebugMessenger()
 
 void BAV::VulkanApplication::PickPhysicalDevice()
 {
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    m_PhysicalDevice = VK_NULL_HANDLE;
 
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
@@ -273,7 +277,7 @@ void BAV::VulkanApplication::PickPhysicalDevice()
         throw std::runtime_error("No Physical devices are found");
     }
 
-    std::vector<VkPhysicalDevice> physicalDevices;
+    std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, physicalDevices.data());
 
     if (physicalDevices.empty())
@@ -286,14 +290,71 @@ void BAV::VulkanApplication::PickPhysicalDevice()
     {
         if (IsDeviceSuitable(device))
         {
-            physicalDevice = device;
+            m_PhysicalDevice = device;
             break;
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE)
+    if (m_PhysicalDevice == VK_NULL_HANDLE)
     {
         throw std::runtime_error("Couldn't find a suitable physical device (GPU)");
+    }
+
+}
+
+void BAV::VulkanApplication::CreateLocalDevice()
+{
+    QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+
+    constexpr float queuePriority = 1.f;
+
+    VkDeviceQueueCreateInfo queueCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = indices.GraphicsFamily.value(),
+        .queueCount = 1,
+        .pQueuePriorities = &queuePriority
+    };
+
+
+    // Device features to be used, for now empty (so everything VK_FALSE)
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkDeviceCreateInfo createInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .queueCreateInfoCount = 1,
+        .pQueueCreateInfos = &queueCreateInfo,
+
+        .pEnabledFeatures = &deviceFeatures
+    };
+
+    // There used to be a difference between Instance- and Device specific
+    // validation layers, but now it's basically the same, so device's valdiation
+    // layers are ignored in Vulkan, but that's not the case for older versions of Vulkan.
+
+    // So, for Backwards compatibility, we set the same validation layers for the
+    // device as we did for the instance.
+
+    createInfo.enabledExtensionCount = 0;
+
+    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
+
+    if (g_bEnableValidationLayers)
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
+        createInfo.ppEnabledLayerNames = charValidationLayers.data();
+    }
+    else
+    {
+        createInfo.enabledLayerCount = 0;
+    }
+
+
+    const VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create local device");
     }
 
 }
