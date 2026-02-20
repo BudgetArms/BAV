@@ -28,9 +28,8 @@ void BAV::VulkanApplication::Run()
 #endif
 
 
+    InitWindow();
     InitVulkan();
-    CreateInstance();
-    SetupDebugMessenger();
 
     MainLoop();
     CleanUp();
@@ -172,7 +171,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
 }
 
 
-void BAV::VulkanApplication::InitVulkan()
+void BAV::VulkanApplication::InitWindow()
 {
     if (!glfwInit())
     {
@@ -188,6 +187,12 @@ void BAV::VulkanApplication::InitVulkan()
 
     // Create Window
     m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
+}
+
+void BAV::VulkanApplication::InitVulkan()
+{
+    CreateInstance();
+    SetupDebugMessenger();
 }
 
 void BAV::VulkanApplication::CreateInstance()

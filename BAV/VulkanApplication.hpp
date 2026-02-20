@@ -22,6 +22,7 @@ namespace BAV
             );
 
     private:
+        void InitWindow();
         void InitVulkan();
         void CreateInstance();
         void MainLoop();
