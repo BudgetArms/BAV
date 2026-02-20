@@ -37,10 +37,8 @@ void BAV::VulkanApplication::Run()
 
 bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 {
-    VkResult result;
-
     uint32_t layerCount = 0;
-    result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
     if (result != VK_SUCCESS)
     {
@@ -66,6 +64,19 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
     });
 
     return foundAllLayers;
+}
+
+bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    // needs to be a gpu & support the geomtryshader
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+        && deviceFeatures.geometryShader;
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
@@ -94,6 +105,32 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
     }
 
     return extensions;
+}
+
+BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
+
+
+    // get the right QueueFamily that has graphics_bit enabled
+    int i = 0;
+    for (const auto& queueFamilyProperty : queueFamilyProperties)
+    {
+        if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.GraphicsFamily = i;
+        }
+
+        ++i;
+    }
+
+    return indices;
 }
 
 VkBool32 BAV::VulkanApplication::DebugCallback(
@@ -193,6 +230,7 @@ void BAV::VulkanApplication::InitVulkan()
 {
     CreateInstance();
     SetupDebugMessenger();
+    PickPhysicalDevice();
 }
 
 void BAV::VulkanApplication::CreateInstance()
@@ -317,6 +355,42 @@ void BAV::VulkanApplication::SetupDebugMessenger()
     }
 
 
-
 }
 
+
+void BAV::VulkanApplication::PickPhysicalDevice()
+{
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0)
+    {
+        throw std::runtime_error("No Physical devices are found");
+    }
+
+    std::vector<VkPhysicalDevice> physicalDevices;
+    vkEnumeratePhysicalDevices(m_Instance, &deviceCount, physicalDevices.data());
+
+    if (physicalDevices.empty())
+    {
+        throw std::runtime_error("No physical devices (GPU) in array found");
+    }
+
+    // Get suitable device
+    for (const auto& device : physicalDevices)
+    {
+        if (IsDeviceSuitable(device))
+        {
+            physicalDevice = device;
+            break;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE)
+    {
+        throw std::runtime_error("Couldn't find a suitable physical device (GPU)");
+    }
+
+}

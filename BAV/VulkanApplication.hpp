@@ -1,4 +1,6 @@
 #pragma once
+
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -8,6 +10,11 @@ class GLFWwindow;
 
 namespace BAV
 {
+    struct QueueFamilyIndices
+    {
+        std::optional<uint32_t> GraphicsFamily;
+    };
+
     class VulkanApplication
     {
     public:
@@ -23,6 +30,8 @@ namespace BAV
 
     private:
         void InitWindow();
+
+
         void InitVulkan();
         void CreateInstance();
         void MainLoop();
@@ -30,9 +39,15 @@ namespace BAV
 
         void SetupDebugMessenger();
 
-        bool CheckValidationLayerSupport() const;
+
+        void PickPhysicalDevice();
+
+        [[nodiscard]] bool CheckValidationLayerSupport() const;
+        [[nodiscard]] static bool IsDeviceSuitable(VkPhysicalDevice device);
 
         static std::vector<const char*> GetRequiredExtensions();
+
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 
 
         GLFWwindow* m_Window{};
