@@ -52,6 +52,7 @@ namespace BAV
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
+        [[nodiscard]] bool DoesDeviceSupportRequiredExtensions(VkPhysicalDevice device) const;
         [[nodiscard]] bool IsDeviceSuitable(VkPhysicalDevice device);
 
         static std::vector<const char*> GetRequiredExtensions();
@@ -79,6 +80,11 @@ namespace BAV
         const std::vector<std::string> m_ValidationLayers =
         {
             "VK_LAYER_KHRONOS_validation"
+        };
+
+        const std::vector<std::string> m_DeviceExtensions =
+        {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
 

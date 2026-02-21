@@ -440,10 +440,39 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
     return foundAllLayers;
 }
 
+bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevice device) const
+{
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
+
+    for (const VkExtensionProperties& availableExtension : availableExtensions)
+    {
+        requiredExtensions.erase(availableExtension.extensionName);
+    }
+
+    // if all the required extensions are supported, return true
+    if (requiredExtensions.empty())
+    {
+        return true;
+    }
+
+
+    return false;
+}
+
+
 bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
 {
     const QueueFamilyIndices indices = FindQueueFamilies(device);
-    return indices.IsComplete();
+
+    const bool areRequiredDeviceExtensionsSupported = DoesDeviceSupportRequiredExtensions(device);
+
+    return indices.IsComplete() && areRequiredDeviceExtensionsSupported;
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
