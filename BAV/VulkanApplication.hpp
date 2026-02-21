@@ -12,7 +12,6 @@ namespace BAV
 {
     struct QueueFamilyIndices
     {
-    public:
         std::optional<uint32_t> GraphicsFamily;
         std::optional<uint32_t> PresentFamily;
 
@@ -20,6 +19,14 @@ namespace BAV
         {
             return GraphicsFamily.has_value() && PresentFamily.has_value();
         }
+
+    };
+
+    struct SwapChainSupportDetails
+    {
+        VkSurfaceCapabilitiesKHR Capabilities;
+        std::vector<VkSurfaceFormatKHR> Formats;
+        std::vector<VkPresentModeKHR> PresentModes;
 
     };
 
@@ -53,11 +60,12 @@ namespace BAV
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
         [[nodiscard]] bool DoesDeviceSupportRequiredExtensions(VkPhysicalDevice device) const;
-        [[nodiscard]] bool IsDeviceSuitable(VkPhysicalDevice device);
+        [[nodiscard]] bool IsDeviceSuitable(VkPhysicalDevice device) const;
 
         static std::vector<const char*> GetRequiredExtensions();
 
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
+        [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
 
         GLFWwindow* m_Window{};

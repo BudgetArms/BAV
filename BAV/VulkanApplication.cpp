@@ -492,13 +492,20 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
 }
 
 
-bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
+bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device) const
 {
     const QueueFamilyIndices indices = FindQueueFamilies(device);
 
     const bool areRequiredDeviceExtensionsSupported = DoesDeviceSupportRequiredExtensions(device);
 
-    return indices.IsComplete() && areRequiredDeviceExtensionsSupported;
+    bool isSwapChainSuitable = false;
+    if (areRequiredDeviceExtensionsSupported)
+    {
+        const SwapChainSupportDetails swapChainSupportDetails = QuerySwapChainSupport(device);
+        isSwapChainSuitable = !swapChainSupportDetails.Formats.empty() && !swapChainSupportDetails.PresentModes.empty();
+    }
+
+    return indices.IsComplete() && areRequiredDeviceExtensionsSupported && isSwapChainSuitable;
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
@@ -566,5 +573,83 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
     }
 
     return indices;
+}
+
+BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhysicalDevice device) const
+{
+    SwapChainSupportDetails details{};
+
+    VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.Capabilities);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get surface capabilities");
+    }
+
+
+    // Get formats
+    uint32_t formatCount = 0;
+    result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get surface formats (count)");
+    }
+
+    if (formatCount == 0)
+    {
+        throw std::runtime_error("Format count is zero");
+    }
+
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, formats.data());
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get surface formats (vector)");
+    }
+
+    if (formats.empty())
+    {
+        throw std::runtime_error("Formats is empty");
+    }
+
+    // Set formats
+    details.Formats = formats;
+
+
+    // Get Present Modes
+    uint32_t presentModesCount = 0;
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModesCount, nullptr);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get present modes (count)");
+    }
+
+    if (presentModesCount == 0)
+    {
+        throw std::runtime_error("Present Mode count is zero");
+    }
+
+    std::vector<VkPresentModeKHR> presentModes(presentModesCount);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModesCount, presentModes.data());
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get present modes (vector)");
+    }
+
+    if (presentModes.empty())
+    {
+        throw std::runtime_error("Present Modes is empty");
+    }
+
+
+    // Set PresentModes
+    details.PresentModes = presentModes;
+
+
+    return details;
 }
 
