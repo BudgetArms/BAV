@@ -77,6 +77,8 @@ namespace BAV
         const int m_Height{ 600 };
         const std::string m_Title{ "HelloTriangle" };
 
+        static constexpr bool m_bPrintWarnings{ true };
+
         const std::vector<std::string> m_ValidationLayers =
         {
             "VK_LAYER_KHRONOS_validation"
@@ -84,7 +86,8 @@ namespace BAV
 
         const std::vector<std::string> m_DeviceExtensions =
         {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            "TestingDeviceExtension"
         };
 
 

@@ -10,6 +10,8 @@
 #include <set>
 #include <GLFW/glfw3.h>
 
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "ConversionHelpers.hpp"
 #include "CreationHelper.hpp"
 
@@ -18,6 +20,8 @@
 #else
     constexpr bool g_bEnableValidationLayers = true;
 #endif
+
+#define FUNCTION_NAME __FUNCTION__
 
 
 void BAV::VulkanApplication::Run()
@@ -461,6 +465,25 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
         return true;
     }
 
+    // Log info about the device & the missing required extension
+    VkPhysicalDeviceProperties deviceProperties{};
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    std::cout << '\n';
+    std::cout << FUNCTION_NAME << '\n';
+    std::cout << "GPU name: " << deviceProperties.deviceName << '\n';
+    std::cout << "GPU type: " << string_VkPhysicalDeviceType(deviceProperties.deviceType) << '\n';
+    std::cout << '\n';
+    std::cout << "Required Device Extensions, that aren't supported by your GPU:" << '\n';
+    for (const std::string& requiredExtensionName : requiredExtensions)
+    {
+        std::cout << '\t' << requiredExtensionName << '\n';
+    }
+    std::cout << '\n';
+
+    // for testing
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+        return true;
 
     return false;
 }
