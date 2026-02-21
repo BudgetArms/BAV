@@ -62,7 +62,7 @@ namespace BAV
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
         VkPhysicalDevice m_PhysicalDevice{ VK_NULL_HANDLE };
-        VkDevice m_Device{ VK_NULL_HANDLE };
+        VkDevice m_LogicalDevice{ VK_NULL_HANDLE };
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };

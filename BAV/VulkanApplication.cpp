@@ -239,7 +239,7 @@ void BAV::VulkanApplication::CleanUp()
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
 
-    vkDestroyDevice(m_Device, nullptr);
+    vkDestroyDevice(m_LogicalDevice, nullptr);
 
     vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
     vkDestroyInstance(m_Instance, nullptr);
@@ -383,7 +383,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
     }
 
 
-    const VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device);
+    const VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create local device");
@@ -397,13 +397,13 @@ void BAV::VulkanApplication::CreateLocalDevice()
 
     if (indices.GraphicsFamily.value() == indices.PresentFamily.value())
     {
-        vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
         m_PresentQueue = m_GraphicsQueue;
     }
     else
     {
-        vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
-        vkGetDeviceQueue(m_Device, indices.PresentFamily.value(), queueIndex, &m_PresentQueue);
+        vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily.value(), queueIndex, &m_PresentQueue);
     }
 
 }
