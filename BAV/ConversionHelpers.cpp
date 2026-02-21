@@ -14,3 +14,4 @@ std::vector<const char*> BAV::ConversionHelpers::StringVectorToCharVector(const 
 
     return charVector;
 }
+
