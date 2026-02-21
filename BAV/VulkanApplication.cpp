@@ -465,21 +465,24 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
         return true;
     }
 
-    // Log info about the device & the missing required extension
-    VkPhysicalDeviceProperties deviceProperties{};
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-    std::cout << '\n';
-    std::cout << FUNCTION_NAME << '\n';
-    std::cout << "GPU name: " << deviceProperties.deviceName << '\n';
-    std::cout << "GPU type: " << string_VkPhysicalDeviceType(deviceProperties.deviceType) << '\n';
-    std::cout << '\n';
-    std::cout << "Required Device Extensions, that aren't supported by your GPU:" << '\n';
-    for (const std::string& requiredExtensionName : requiredExtensions)
+    if (m_bPrintWarnings)
     {
-        std::cout << '\t' << requiredExtensionName << '\n';
+        // Log info about the device & the missing required extension
+        VkPhysicalDeviceProperties deviceProperties{};
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        std::cout << '\n';
+        std::cout << FUNCTION_NAME << '\n';
+        std::cout << "GPU name: " << deviceProperties.deviceName << '\n';
+        std::cout << "GPU type: " << string_VkPhysicalDeviceType(deviceProperties.deviceType) << '\n';
+        std::cout << '\n';
+        std::cout << "Required Device Extensions, that aren't supported by your GPU:" << '\n';
+        for (const std::string& requiredExtensionName : requiredExtensions)
+        {
+            std::cout << '\t' << requiredExtensionName << '\n';
+        }
+        std::cout << '\n';
     }
-    std::cout << '\n';
 
     return false;
 }
