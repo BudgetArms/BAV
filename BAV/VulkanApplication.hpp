@@ -84,10 +84,11 @@ namespace BAV
             "VK_LAYER_KHRONOS_validation"
         };
 
-        const std::vector<std::string> m_DeviceExtensions =
+        const  std::vector<std::string> m_DeviceExtensions =
         {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
+
 
 
     };

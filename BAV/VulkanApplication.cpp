@@ -356,13 +356,18 @@ void BAV::VulkanApplication::CreateLocalDevice()
     // Device features to be used, for now empty (so everything VK_FALSE)
     VkPhysicalDeviceFeatures deviceFeatures{};
 
+    const std::vector<const char*> charDeviceExtensions = ConversionHelpers::StringVectorToCharVector(m_DeviceExtensions);
+
     VkDeviceCreateInfo createInfo
     {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
 
-        .pEnabledFeatures = &deviceFeatures
+        .enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size()),
+        .ppEnabledExtensionNames = charDeviceExtensions.data(),
+
+        .pEnabledFeatures = &deviceFeatures,
     };
 
     // There used to be a difference between Instance- and Device specific
@@ -372,7 +377,6 @@ void BAV::VulkanApplication::CreateLocalDevice()
     // So, for Backwards compatibility, we set the same validation layers for the
     // device as we did for the instance.
 
-    createInfo.enabledExtensionCount = 0;
 
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
 
