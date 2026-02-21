@@ -472,7 +472,7 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
 
         // Check for Present support
         VkBool32 hasPresentSupport = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, static_cast<uint32_t>(i), m_Surface, &hasPresentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, static_cast<uint32_t>(i), m_Surface, &hasPresentSupport);
         if (hasPresentSupport)
         {
             indices.PresentFamily = i;
