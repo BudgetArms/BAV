@@ -67,6 +67,9 @@ namespace BAV
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        [[nodiscard]] VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
@@ -86,6 +89,14 @@ namespace BAV
         const std::string m_Title{ "HelloTriangle" };
 
         static constexpr bool m_bPrintWarnings{ true };
+
+        // Swap Chain
+        static constexpr VkFormat swapChainFormat{ VK_FORMAT_B8G8R8A8_SRGB };
+        static constexpr VkColorSpaceKHR swapChainColorSpace{ VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+
+        static constexpr VkPresentModeKHR swapChainPresentMode{ VK_PRESENT_MODE_MAILBOX_KHR };
+        static constexpr VkPresentModeKHR swapChainPresentModeDefault { VK_PRESENT_MODE_FIFO_KHR };
+
 
         const std::vector<std::string> m_ValidationLayers =
         {
