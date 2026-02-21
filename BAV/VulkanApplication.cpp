@@ -481,10 +481,6 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
     }
     std::cout << '\n';
 
-    // for testing
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-        return true;
-
     return false;
 }
 

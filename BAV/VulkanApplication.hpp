@@ -86,8 +86,7 @@ namespace BAV
 
         const std::vector<std::string> m_DeviceExtensions =
         {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-            "TestingDeviceExtension"
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
 
