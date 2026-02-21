@@ -419,16 +419,15 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device)
 {
     const QueueFamilyIndices indices = FindQueueFamilies(device);
-    return indices.IsValid();
+    return indices.IsComplete();
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
 
     // Get Vulkan Extensions & ExtensionsCount
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     if (!glfwExtensions)
     {
@@ -450,7 +449,7 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
     return extensions;
 }
 
-BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device)
+BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device) const
 {
     QueueFamilyIndices indices;
 
@@ -465,12 +464,21 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
     int i = 0;
     for (const auto& queueFamilyProperty : queueFamilyProperties)
     {
+        // Check for Graphic support
         if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.GraphicsFamily = i;
         }
 
-        if (indices.IsValid())
+        // Check for Present support
+        VkBool32 hasPresentSupport = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, static_cast<uint32_t>(i), m_Surface, &hasPresentSupport);
+        if (hasPresentSupport)
+        {
+            indices.PresentFamily = i;
+        }
+
+        if (indices.IsComplete())
         {
             break;
         }

@@ -14,12 +14,12 @@ namespace BAV
     {
     public:
         std::optional<uint32_t> GraphicsFamily;
+        std::optional<uint32_t> PresentFamily;
 
-        [[nodiscard]] bool IsValid() const
+        [[nodiscard]] bool IsComplete() const
         {
-            return GraphicsFamily.has_value();
+            return GraphicsFamily.has_value() && PresentFamily.has_value();
         }
-
 
     };
 
@@ -52,23 +52,24 @@ namespace BAV
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
-        [[nodiscard]] static bool IsDeviceSuitable(VkPhysicalDevice device);
+        [[nodiscard]] bool IsDeviceSuitable(VkPhysicalDevice device);
 
         static std::vector<const char*> GetRequiredExtensions();
 
-        [[nodiscard]] static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+        [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
 
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
-        VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
-        VkDevice m_Device = VK_NULL_HANDLE;
+        VkPhysicalDevice m_PhysicalDevice{ VK_NULL_HANDLE };
+        VkDevice m_Device{ VK_NULL_HANDLE };
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };
 
         // Queue
         VkQueue m_GraphicsQueue{ nullptr };
+        VkQueue m_PresentQueue{ nullptr };
 
 
         const int m_Width{ 800 };
