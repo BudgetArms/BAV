@@ -46,6 +46,7 @@ namespace BAV
         void CleanUp();
 
         void SetupDebugMessenger();
+        void CreateSurface();
         void PickPhysicalDevice();
         void CreateLocalDevice();
 
@@ -63,6 +64,8 @@ namespace BAV
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
         VkDevice m_Device = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
+
+        VkSurfaceKHR m_Surface { nullptr };
 
         // Queue
         VkQueue m_GraphicsQueue{ nullptr };

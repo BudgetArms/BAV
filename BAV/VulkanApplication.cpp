@@ -133,6 +133,13 @@ void BAV::VulkanApplication::InitVulkan()
 {
     CreateInstance();
     SetupDebugMessenger();
+    CreateSurface();
+    // TODO: learn more about this
+    // Surface loaded before physical device selection,
+    // because it can influence device selection
+
+
+
     PickPhysicalDevice();
     CreateLocalDevice();
 }
@@ -233,6 +240,7 @@ void BAV::VulkanApplication::CleanUp()
 
     vkDestroyDevice(m_Device, nullptr);
 
+    vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
     vkDestroyInstance(m_Instance, nullptr);
 
     glfwDestroyWindow(m_Window);
@@ -263,6 +271,16 @@ void BAV::VulkanApplication::SetupDebugMessenger()
         throw std::runtime_error("DebugMessenger is invalid");
     }
 
+
+}
+
+void BAV::VulkanApplication::CreateSurface()
+{
+    const VkResult result = glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create surface");
+    }
 
 }
 
