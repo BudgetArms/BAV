@@ -357,6 +357,12 @@ void BAV::VulkanApplication::CreateLocalDevice()
         throw std::runtime_error("Failed to create local device");
     }
 
+    // Get the device queue that is implicitely created and destroyed upon
+    // creation and destruction respectifly of
+    // the logical device
+    constexpr uint32_t queueIndex = 0;
+    vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+
 }
 
 

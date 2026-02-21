@@ -64,6 +64,10 @@ namespace BAV
         VkDevice m_Device = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
+        // Queue
+        VkQueue m_GraphicsQueue{ nullptr };
+
+
         const int m_Width{ 800 };
         const int m_Height{ 600 };
         const std::string m_Title{ "HelloTriangle" };
