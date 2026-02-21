@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #define GLFW_INCLUDE_VULKAN
+#include <set>
 #include <GLFW/glfw3.h>
 
 #include "ConversionHelpers.hpp"
@@ -325,15 +326,27 @@ void BAV::VulkanApplication::CreateLocalDevice()
 {
     QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamiliesIndex =
+    {
+        indices.GraphicsFamily.value(),
+        indices.PresentFamily.value()
+    };
+
     constexpr float queuePriority = 1.f;
 
-    VkDeviceQueueCreateInfo queueCreateInfo
+    for (const auto& uniqueQueueFamilyIndex : uniqueQueueFamiliesIndex)
     {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = indices.GraphicsFamily.value(),
-        .queueCount = 1,
-        .pQueuePriorities = &queuePriority
-    };
+        VkDeviceQueueCreateInfo queueCreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueFamilyIndex = uniqueQueueFamilyIndex,
+            .queueCount = 1,
+            .pQueuePriorities = &queuePriority
+        };
+
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
 
     // Device features to be used, for now empty (so everything VK_FALSE)
@@ -342,8 +355,8 @@ void BAV::VulkanApplication::CreateLocalDevice()
     VkDeviceCreateInfo createInfo
     {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .queueCreateInfoCount = 1,
-        .pQueueCreateInfos = &queueCreateInfo,
+        .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+        .pQueueCreateInfos = queueCreateInfos.data(),
 
         .pEnabledFeatures = &deviceFeatures
     };
@@ -380,7 +393,18 @@ void BAV::VulkanApplication::CreateLocalDevice()
     // creation and destruction respectifly of
     // the logical device
     constexpr uint32_t queueIndex = 0;
-    vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+
+
+    if (indices.GraphicsFamily.value() == indices.PresentFamily.value())
+    {
+        vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        m_PresentQueue = m_GraphicsQueue;
+    }
+    else
+    {
+        vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        vkGetDeviceQueue(m_Device, indices.PresentFamily.value(), queueIndex, &m_PresentQueue);
+    }
 
 }
 
