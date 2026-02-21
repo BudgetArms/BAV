@@ -134,6 +134,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateInstance();
     SetupDebugMessenger();
     PickPhysicalDevice();
+    CreateLocalDevice();
 }
 
 void BAV::VulkanApplication::CreateInstance()
