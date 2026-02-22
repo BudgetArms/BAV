@@ -243,6 +243,11 @@ void BAV::VulkanApplication::CleanUp()
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
 
+    for (VkImageView& imageView : m_SwapChainImageViews)
+    {
+        vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
+    }
+
     vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
@@ -546,6 +551,46 @@ void BAV::VulkanApplication::CreateSwapChain()
     // Set SwapChain variables
     m_SwapChainImageFormat = surfaceFormat.format;
     m_SwapChainExtent = extent;
+
+}
+
+void BAV::VulkanApplication::CreateImageViews()
+{
+    m_SwapChainImageViews.resize(m_SwapChainImages.size());
+
+    for (int i = 0; i < m_SwapChainImages.size(); ++i)
+    {
+        // The viewType parameter allows you to treat images as
+        // 1D textures, 2D textures, 3D textures and cube maps.
+
+        VkImageViewCreateInfo createInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = m_SwapChainImages[i],
+
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = m_SwapChainImageFormat,
+
+            .components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .components.a = VK_COMPONENT_SWIZZLE_IDENTITY,
+
+            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .subresourceRange.baseMipLevel = 0,
+            .subresourceRange.levelCount = 1,
+            .subresourceRange.baseArrayLayer = 0,
+            .subresourceRange.layerCount = 1,
+        };
+
+        const VkResult result = vkCreateImageView(m_LogicalDevice, &createInfo, nullptr, &m_SwapChainImageViews[i]);
+
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create image view");
+        }
+
+    }
 
 }
 

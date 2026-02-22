@@ -57,6 +57,7 @@ namespace BAV
         void PickPhysicalDevice();
         void CreateLocalDevice();
         void CreateSwapChain();
+        void CreateImageViews();
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
@@ -95,8 +96,9 @@ namespace BAV
 
         // Swap Chain
         std::vector<VkImage> m_SwapChainImages{};
-        VkFormat m_SwapChainImageFormat;
-        VkExtent2D m_SwapChainExtent;
+        std::vector<VkImageView> m_SwapChainImageViews{};
+        VkFormat m_SwapChainImageFormat{};
+        VkExtent2D m_SwapChainExtent{};
 
         static constexpr VkFormat swapChainFormat{ VK_FORMAT_B8G8R8A8_SRGB };
         static constexpr VkColorSpaceKHR swapChainColorSpace{ VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
