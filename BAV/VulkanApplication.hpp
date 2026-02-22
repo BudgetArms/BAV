@@ -56,6 +56,7 @@ namespace BAV
         void CreateSurface();
         void PickPhysicalDevice();
         void CreateLocalDevice();
+        void CreateSwapChain();
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
@@ -69,12 +70,14 @@ namespace BAV
 
         [[nodiscard]] VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         [[nodiscard]] VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
         VkPhysicalDevice m_PhysicalDevice{ VK_NULL_HANDLE };
         VkDevice m_LogicalDevice{ VK_NULL_HANDLE };
+        VkSwapchainKHR m_SwapChain{};
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };

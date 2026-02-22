@@ -144,9 +144,9 @@ void BAV::VulkanApplication::InitVulkan()
     // because it can influence device selection
 
 
-
     PickPhysicalDevice();
     CreateLocalDevice();
+    CreateSwapChain();
 }
 
 void BAV::VulkanApplication::CreateInstance()
@@ -242,6 +242,8 @@ void BAV::VulkanApplication::CleanUp()
    {
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
+
+    vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
 
@@ -412,6 +414,113 @@ void BAV::VulkanApplication::CreateLocalDevice()
     {
         vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
         vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily.value(), queueIndex, &m_PresentQueue);
+    }
+
+}
+
+void BAV::VulkanApplication::CreateSwapChain()
+{
+    const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice);
+
+    VkSurfaceFormatKHR surfaceFormat = ChooseSwapChainSurfaceFormat(swapChainSupport.Formats);
+    const VkPresentModeKHR presentMode = ChooseSwapChainPresentMode(swapChainSupport.PresentModes);
+    const VkExtent2D extent = ChooseSwapChainExtent(swapChainSupport.Capabilities);
+
+    // minImageCount, is not recommended, bc driver sometimes has to do internal operations
+    // minImageCount + 1, is more recommended, bc then we can write to the other image
+    uint32_t imageCount = swapChainSupport.Capabilities.minImageCount + 1;
+
+    imageCount = std::clamp(imageCount, static_cast<uint32_t>(0), swapChainSupport.Capabilities.maxImageCount);
+
+
+    // The imageArrayLayers specifies the amount of layers
+    // each image consists of. This is always 1 unless you
+    // are developing a stereoscopic 3D application.
+
+    // imageUsage: for postprocessing: VK_IMAGE_USAGE_TRANSFER_DST_BIT
+
+    // Create SwapChain
+    VkSwapchainCreateInfoKHR createInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .surface = m_Surface,
+
+        .minImageCount = imageCount,
+        .imageFormat = swapChainFormat,
+        .imageColorSpace = swapChainColorSpace,
+        .imageExtent = extent,
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+    };
+
+
+
+    // Image Sharing Mode:
+
+    // VK_SHARING_MODE_EXCLUSIVE
+    // An image is owned by one queue family at a time
+    // and ownership must be explicitly transferred before
+    // using it in another queue family. This option offers
+    // the best performance.
+
+    // VK_SHARING_MODE_CONCURRENT
+    // Images can be used across multiple queue families
+    // without explicit ownership transfers.
+
+
+    const QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+    const uint32_t queueFamilyIndices[] = {indices.GraphicsFamily.value(), indices.PresentFamily.value() };
+
+    if (indices.GraphicsFamily.value() == indices.PresentFamily.value())
+    {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;   // optional
+        createInfo.pQueueFamilyIndices = nullptr;
+    }
+    else
+    {
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    }
+
+
+    // Transforms to be added or not (e.g. 90degrees rotation or horizontal flip)
+    createInfo.preTransform = swapChainSupport.Capabilities.currentTransform;
+
+    // Blending with other windows, I think this means transparent windows???
+    // TODO: research this more indepth
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+    // Set present mode
+    createInfo.presentMode = presentMode;
+
+    // If the clipped member is set to VK_TRUE then that means that
+    // we don't care about the color of pixels that are obscured,
+    // for example because another window is in front of them.
+    // Unless you really need to be able to read these pixels
+    // back and get predictable results, you'll get the best
+    // performance by enabling clipping.
+
+    // TODO: learn more about this so that I truely know what it means
+    createInfo.clipped = VK_TRUE;
+
+
+    // That leaves one last field, oldSwapchain. With Vulkan,
+    // it's possible that your swap chain becomes invalid or
+    // unoptimized while your application is running, for example
+    // because the window was resized. In that case the swap chain
+    // actually needs to be recreated from scratch and a reference
+    // to the old one must be specified in this field. This is a
+    // complex topic that we'll learn more about in a future chapter.
+    // For now, we'll assume that we'll only ever create one swap chain.
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    const VkResult result = vkCreateSwapchainKHR(m_LogicalDevice, &createInfo, nullptr, &m_SwapChain);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create swap chain");
     }
 
 }
@@ -715,5 +824,71 @@ VkPresentModeKHR BAV::VulkanApplication::ChooseSwapChainPresentMode(
     }
 
     return swapChainPresentModeDefault;
+}
+
+VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const
+{
+    // Tutorial:
+    // The swap extent is the resolution of the swap chain images, and
+    // it's almost always exactly equal to the resolution of the window
+    // that we're drawing to in pixels (more on that in a moment).
+    // The range of the possible resolutions is defined in the
+    // VkSurfaceCapabilitiesKHR structure. Vulkan tells us to match the
+    // resolution of the window by setting the width and height in the
+    // currentExtent member. However, some window managers do allow us
+    // to differ here and this is indicated by setting the width and
+    // height in currentExtent to a special value: the maximum value
+    // of uint32_t. In that case we'll pick the resolution that best
+    // matches the window within the minImageExtent and maxImageExtent
+    // bounds. But we must specify the resolution in the correct unit.
+
+    // My conclusion:
+    // Vulkans says match the resolution of (GLFW) window,
+    // I assume this was because screen cords and resolution
+    // was (almost) always 1:1.
+
+    // but window managers indicate that the resolution and
+    // screen coordinates are NOT a 1:1 match by setting
+    // the currentExtend's width and height to the maximum
+    // value of uint32_t. This indicates to us that the
+    // currentExtend should be 'fixed'
+
+
+    // Monitor:
+    // GLFW's width and height is not in pixels but in screen coordinates.
+    // Pixels and screen coordinates map 1:1 on almost every display/monitor
+    // But for example, the (Apple) Mac with Retina monitor, it's different.
+    // Physical resolution: 5120 x 2880
+    // Logical  resolution: 2560 x 1440
+
+
+    // if window manager sets correct with/height, return it, manually set it
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()
+        && capabilities.currentExtent.height != std::numeric_limits<uint32_t>::max())
+    {
+        return capabilities.currentExtent;
+    }
+    else
+    {
+        int width{};
+        int height{};
+
+        glfwGetFramebufferSize(m_Window, &width, &height);
+
+        VkExtent2D actualExtent
+        {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };
+
+        actualExtent.width
+         = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+
+        actualExtent.height
+         = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
+
 }
 
