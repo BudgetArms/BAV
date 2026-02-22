@@ -516,12 +516,36 @@ void BAV::VulkanApplication::CreateSwapChain()
     // For now, we'll assume that we'll only ever create one swap chain.
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    const VkResult result = vkCreateSwapchainKHR(m_LogicalDevice, &createInfo, nullptr, &m_SwapChain);
+    VkResult result = vkCreateSwapchainKHR(m_LogicalDevice, &createInfo, nullptr, &m_SwapChain);
 
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create swap chain");
     }
+
+
+    // Get SwapChain Images
+    result = vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, nullptr);
+
+    if (result )
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get swap chain images (count)");
+    }
+
+    m_SwapChainImages.resize(imageCount);
+
+    result = vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, m_SwapChainImages.data());
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to get swap chain images (vector)");
+    }
+
+    // Set SwapChain variables
+    m_SwapChainImageFormat = surfaceFormat.format;
+    m_SwapChainExtent = extent;
 
 }
 

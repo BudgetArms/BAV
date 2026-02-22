@@ -94,6 +94,10 @@ namespace BAV
         static constexpr bool m_bPrintWarnings{ true };
 
         // Swap Chain
+        std::vector<VkImage> m_SwapChainImages{};
+        VkFormat m_SwapChainImageFormat;
+        VkExtent2D m_SwapChainExtent;
+
         static constexpr VkFormat swapChainFormat{ VK_FORMAT_B8G8R8A8_SRGB };
         static constexpr VkColorSpaceKHR swapChainColorSpace{ VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 
