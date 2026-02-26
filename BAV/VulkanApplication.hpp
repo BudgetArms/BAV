@@ -59,6 +59,12 @@ namespace BAV
         void CreateSwapChain();
         void CreateImageViews();
 
+        void RecreateSwapChain();
+        void CleanUpSwapChain() const;
+
+        // TODO: add the swap chain recreation functions related
+        // to drawFrame & Frame buffers, when both are added in the future
+
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
         [[nodiscard]] bool DoesDeviceSupportRequiredExtensions(VkPhysicalDevice device) const;

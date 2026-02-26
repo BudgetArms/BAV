@@ -243,7 +243,10 @@ void BAV::VulkanApplication::CleanUp()
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
 
-    for (VkImageView& imageView : m_SwapChainImageViews)
+
+    CleanUpSwapChain();
+
+    for (const VkImageView& imageView : m_SwapChainImageViews)
     {
         vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
     }
@@ -591,6 +594,40 @@ void BAV::VulkanApplication::CreateImageViews()
         }
 
     }
+
+}
+
+void BAV::VulkanApplication::RecreateSwapChain()
+{
+    // Wait until logical device is idle, e.g. we don't
+    // want to change stuff while it's in use
+    vkDeviceWaitIdle(m_LogicalDevice);
+
+    CleanUpSwapChain();
+
+    // Render pass is not getting recreated for simplicity.
+    // This should be done when window goes from standard range to
+    // high dynamic range monitor (or the other way around, I think).
+    CreateSwapChain();
+    CreateImageViews();
+    // TODO: uncomment CreateFrameBuffers after FrameBuffer's are created
+    // CreatFrameBuffers();
+}
+
+void BAV::VulkanApplication::CleanUpSwapChain() const
+{
+    // TODO: uncomment this after FrameBuffer's are created
+    // for (const auto frameBuffer : m_SwapChainFrameBuffers)
+    // {
+    //     vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
+    // }
+
+    for (const auto imageView : m_SwapChainImageViews)
+    {
+        vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
+    }
+
+    vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
 
 }
 
