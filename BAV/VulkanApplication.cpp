@@ -251,7 +251,6 @@ void BAV::VulkanApplication::CleanUp()
         vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
     }
 
-    vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
 
