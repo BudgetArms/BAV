@@ -149,6 +149,7 @@ void BAV::VulkanApplication::InitVulkan()
     PickPhysicalDevice();
     CreateLocalDevice();
     CreateSwapChain();
+    CreateRenderPass();
     CreateGraphicsPipeline();
 }
 
@@ -246,6 +247,7 @@ void BAV::VulkanApplication::CleanUp()
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
 
+    vkDestroyPipeline(m_LogicalDevice, m_GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
     vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
 
@@ -729,8 +731,6 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         fragmentShaderCreateInfo
     };
 
-    vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
-
 
     // Dynamic State
     std::vector<VkDynamicState> dynamicStates
@@ -978,12 +978,50 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         .pPushConstantRanges = nullptr, // optional
     };
 
-
     VkResult result = vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_PipelineLayout);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create pipeline layout"));
     }
+
+
+    // Graphics Pipeline:
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount = 2,
+        .pStages = shaderStages,
+
+        .pVertexInputState      = &vertexInputCreateInfo,
+        .pInputAssemblyState    = &inputAssemblyCreateInfo,
+        .pViewportState         = &viewportCreateInfo,
+        .pRasterizationState    = &rasterizationCreateInfo,
+        .pMultisampleState      = &multisampleCreateInfo,
+        .pDepthStencilState     = &depthStencilCreateInfo,
+        .pColorBlendState       = &colorBlendCreateInfo,
+        .pDynamicState          = &dynamicStateCreateInfo,
+
+        .layout     = m_PipelineLayout,
+        .renderPass = m_RenderPass,
+        .subpass    = 0,    // index of subpass
+
+        .basePipelineHandle = VK_NULL_HANDLE,   // optional
+        .basePipelineIndex = -1,                // optional
+    };
+
+    result = vkCreateGraphicsPipelines(m_LogicalDevice,
+        VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr,
+        &m_GraphicsPipeline);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create graphics pipeline"));
+    }
+
+
+    // Destroy shader module
+    vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
+
+
 
 }
 

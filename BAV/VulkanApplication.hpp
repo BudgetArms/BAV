@@ -92,6 +92,7 @@ namespace BAV
         VkSwapchainKHR m_SwapChain{};
         VkRenderPass m_RenderPass{};
         VkPipelineLayout m_PipelineLayout{};
+        VkPipeline m_GraphicsPipeline{};
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };
