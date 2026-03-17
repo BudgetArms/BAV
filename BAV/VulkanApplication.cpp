@@ -5,9 +5,11 @@
 #include <ranges>
 #include <algorithm>
 #include <stdexcept>
+#include <fstream>
+#include <set>
+#include <ios>
 
 #define GLFW_INCLUDE_VULKAN
-#include <set>
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vk_enum_string_helper.h>
@@ -573,16 +575,23 @@ void BAV::VulkanApplication::CreateImageViews()
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
             .format = m_SwapChainImageFormat,
 
-            .components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .components.a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            // .components =  = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .components = VkComponentMapping
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
 
-            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1,
+            .subresourceRange = VkImageSubresourceRange
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
         };
 
         const VkResult result = vkCreateImageView(m_LogicalDevice, &createInfo, nullptr, &m_SwapChainImageViews[i]);
@@ -594,6 +603,60 @@ void BAV::VulkanApplication::CreateImageViews()
 
     }
 
+}
+
+void BAV::VulkanApplication::CreateGraphicsPipeline()
+{
+    const std::vector<char> shaderCode = ReadFile("Shaders/Slang.spv");
+    VkShaderModule shaderModule = CreateShaderModule(shaderCode);
+
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+        .module = shaderModule,
+        .pName = "main"
+    };
+
+    vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
+
+     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = 0,
+        .pVertexBindingDescriptions = nullptr, // optional
+        .vertexAttributeDescriptionCount = 0,
+        .pVertexAttributeDescriptions = nullptr // optional
+    };
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE
+    };
+
+
+}
+
+VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char>& code) const
+{
+    const VkShaderModuleCreateInfo createInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = code.size() * sizeof(char),
+        .pCode = reinterpret_cast<const uint32_t*>(code.data())
+    };
+
+    VkShaderModule shaderModule;
+    const VkResult result = vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &shaderModule);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create shader module"));
+    }
+
+    return shaderModule;
 }
 
 void BAV::VulkanApplication::RecreateSwapChain()
@@ -995,5 +1058,41 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
         return actualExtent;
     }
 
+}
+
+std::vector<char> BAV::VulkanApplication::ReadFile(const std::string &filename)
+{
+    // ate: start reading from end of file
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open())
+    {
+        throw std::runtime_error( FUNCTION_NAME + std::string("File not found or unable to open"));
+    }
+
+    // std::ifstream::tellg() returns the current position of the input pointer.
+    // It indicates where the next read operation will occur in the file.
+    std::vector<char> buffer(file.tellg());
+
+
+    // Read all bytes at once
+
+    // std::ifstream::seek(...) sets input position indicator of streambuf object
+    // beg: beginning of file
+    file.seekg(0, std::ios::beg);
+    file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+
+    file.close();
+
+    if (buffer.empty())
+    {
+        throw std::runtime_error("Buffer is empty");
+    }
+
+
+    // Close the file handle
+    file.close();
+
+    return buffer;
 }
 

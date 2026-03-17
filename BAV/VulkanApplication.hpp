@@ -58,6 +58,9 @@ namespace BAV
         void CreateLocalDevice();
         void CreateSwapChain();
         void CreateImageViews();
+        void CreateGraphicsPipeline();
+
+        [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
 
         void RecreateSwapChain();
         void CleanUpSwapChain() const;
@@ -79,6 +82,7 @@ namespace BAV
         [[nodiscard]] VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
+        static std::vector<char> ReadFile(const std::string& filename);
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
