@@ -171,7 +171,7 @@ void BAV::VulkanApplication::CreateInstance()
 
     const std::vector<const char*> requiredExtensions = GetRequiredExtensions();
 
-    VkInstanceCreateInfo createInfo
+    VkInstanceCreateInfo instance
     {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &applicationInfo,
@@ -186,17 +186,17 @@ void BAV::VulkanApplication::CreateInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (g_bEnableValidationLayers)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
-        createInfo.ppEnabledLayerNames = charValidationLayers.data();
+        instance.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
+        instance.ppEnabledLayerNames = charValidationLayers.data();
 
         CreationHelper::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = &debugCreateInfo;
+        instance.pNext = &debugCreateInfo;
     }
     else
     {
         // If not debugging, don't add any validation layers
-        createInfo.enabledLayerCount = 0;
-        createInfo.pNext = nullptr;
+        instance.enabledLayerCount = 0;
+        instance.pNext = nullptr;
     }
 
 
@@ -219,7 +219,7 @@ void BAV::VulkanApplication::CreateInstance()
 
     // Create Vulkan Instance
     // We don't have a custom allocator (for now/yet??)
-    const VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance);
+    const VkResult result = vkCreateInstance(&instance, nullptr, &m_Instance);
 
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
     {
@@ -241,11 +241,13 @@ void BAV::VulkanApplication::MainLoop()
 
 void BAV::VulkanApplication::CleanUp()
 {
-    vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
    if (g_bEnableValidationLayers)
    {
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
+
+    vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
+    vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
 
     CleanUpSwapChain();
 
@@ -270,11 +272,11 @@ void BAV::VulkanApplication::SetupDebugMessenger()
     if (!g_bEnableValidationLayers)
         return;
 
-    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-    CreationHelper::PopulateDebugMessengerCreateInfo(createInfo);
+    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessenger{};
+    CreationHelper::PopulateDebugMessengerCreateInfo(debugUtilsMessenger);
 
 
-    const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr,
+    const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &debugUtilsMessenger, nullptr,
         &m_DebugMessenger);
 
     if (result != VK_SUCCESS)
@@ -536,8 +538,6 @@ void BAV::VulkanApplication::CreateSwapChain()
     // Get SwapChain Images
     result = vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, nullptr);
 
-    if (result )
-
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to get swap chain images (count)");
@@ -601,6 +601,102 @@ void BAV::VulkanApplication::CreateImageViews()
             throw std::runtime_error("Failed to create image view");
         }
 
+    }
+
+}
+
+void BAV::VulkanApplication::CreateRenderPass()
+{
+    // Color attachment:
+    VkAttachmentDescription colorAttachment
+    {
+        .format = m_SwapChainImageFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    };
+
+    // Samples:
+    // Refers to multisampling samples,
+    // since not using multisampling, is set to one
+
+    // LoadOp:
+    // VK_ATTACHMENT_LOAD_OP_LOAD: Preserve the existing contents of the attachment
+    // VK_ATTACHMENT_LOAD_OP_CLEAR: Clear the values to a constant at the start
+    // VK_ATTACHMENT_LOAD_OP_DONT_CARE: Existing contents are undefined; we don't care about them
+
+    // StoreOp:
+    // VK_ATTACHMENT_STORE_OP_STORE: Rendered contents will be stored in memory and can be read later
+    // VK_ATTACHMENT_STORE_OP_DONT_CARE: Contents of the framebuffer will be undefined after the rendering
+
+    // Stencil:
+    // For our triangle example, stencil is not used, so we don't loading/storing
+    // isn't important/irrelevant.
+
+    // Layouts:
+
+    // Initial layout:
+    // specifies which layout the image will have, before the render pass begins
+    // VK_IMAGE_LAYOUT_UNDEFINED: for intial layout, it means
+    // we don't care about what the previous image layout was
+
+    // Final layout:
+    // specifies the layout to automatically transition to when the render pass finishes.
+    // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: we want the image to be ready to presention using swapchain
+
+
+    // Color attachment reference:
+    VkAttachmentReference colorAttachmentReference
+    {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+
+    // Attachment:
+    // is the index
+
+    // Layout:
+    // VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: this gives the best performance
+
+
+    // Subpass:
+    VkSubpassDescription subpass
+    {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorAttachmentReference,
+    };
+
+    // Bind point:
+    // We have to specify that this is a graphics subpass and not a
+    // compute subpass, which might come in the future
+
+    // Types of attachments that can be reference to subpass:
+    // pInputAttachments:       Attachments that are read from a shader
+    // pResolveAttachments:     Attachments used for multisampling color attachments
+    // pDepthStencilAttachment: Attachment for depth and stencil data
+    // pPreserveAttachments:    Attachments that are not used by this subpass,
+    //                          but for which the data must be preserved
+
+
+    // Render pass:
+    VkRenderPassCreateInfo renderPassCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &colorAttachment,
+        .subpassCount = 1,
+        .pSubpasses = &subpass,
+    };
+
+    VkResult result = vkCreateRenderPass(m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create render pass"));
     }
 
 }
@@ -893,7 +989,7 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
 VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char>& code) const
 {
-    const VkShaderModuleCreateInfo createInfo
+    const VkShaderModuleCreateInfo shaderModuleCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = code.size() * sizeof(char),
@@ -901,7 +997,7 @@ VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char
     };
 
     VkShaderModule shaderModule{};
-    const VkResult result = vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &shaderModule);
+    const VkResult result = vkCreateShaderModule(m_LogicalDevice, &shaderModuleCreateInfo, nullptr, &shaderModule);
 
     if (result != VK_SUCCESS)
     {

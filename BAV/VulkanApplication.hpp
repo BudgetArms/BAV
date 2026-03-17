@@ -58,6 +58,7 @@ namespace BAV
         void CreateLocalDevice();
         void CreateSwapChain();
         void CreateImageViews();
+        void CreateRenderPass();
         void CreateGraphicsPipeline();
 
         [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
@@ -73,7 +74,7 @@ namespace BAV
         [[nodiscard]] bool DoesDeviceSupportRequiredExtensions(VkPhysicalDevice device) const;
         [[nodiscard]] bool IsDeviceSuitable(VkPhysicalDevice device) const;
 
-        static std::vector<const char*> GetRequiredExtensions();
+        [[nodiscard]] static std::vector<const char*> GetRequiredExtensions();
 
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
@@ -82,13 +83,14 @@ namespace BAV
         [[nodiscard]] VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
-        static std::vector<char> ReadFile(const std::string& filename);
+        [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
         VkPhysicalDevice m_PhysicalDevice{ VK_NULL_HANDLE };
         VkDevice m_LogicalDevice{ VK_NULL_HANDLE };
         VkSwapchainKHR m_SwapChain{};
+        VkRenderPass m_RenderPass{};
         VkPipelineLayout m_PipelineLayout{};
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
