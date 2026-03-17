@@ -149,6 +149,7 @@ void BAV::VulkanApplication::InitVulkan()
     PickPhysicalDevice();
     CreateLocalDevice();
     CreateSwapChain();
+    CreateGraphicsPipeline();
 }
 
 void BAV::VulkanApplication::CreateInstance()
@@ -240,11 +241,11 @@ void BAV::VulkanApplication::MainLoop()
 
 void BAV::VulkanApplication::CleanUp()
 {
+    vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
    if (g_bEnableValidationLayers)
    {
        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
    }
-
 
     CleanUpSwapChain();
 
@@ -252,7 +253,6 @@ void BAV::VulkanApplication::CleanUp()
     {
         vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
     }
-
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
 
@@ -607,20 +607,52 @@ void BAV::VulkanApplication::CreateImageViews()
 
 void BAV::VulkanApplication::CreateGraphicsPipeline()
 {
-    const std::vector<char> shaderCode = ReadFile("Shaders/Slang.spv");
+    // Shader Stage
+    const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangle.spv");
     VkShaderModule shaderModule = CreateShaderModule(shaderCode);
 
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfo
+    VkPipelineShaderStageCreateInfo vertexShaderCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage = VK_SHADER_STAGE_VERTEX_BIT,
         .module = shaderModule,
-        .pName = "main"
+        .pName = "VertexMain"
+    };
+
+    VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .module = shaderModule,
+        .pName = "FragmentMain"
+    };
+
+    VkPipelineShaderStageCreateInfo shaderStages[] =
+    {
+        vertexShaderCreateInfo,
+        fragmentShaderCreateInfo
     };
 
     vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
 
-     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo
+
+    // Dynamic State
+    std::vector<VkDynamicState> dynamicStates
+    {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
+
+    // Vertex Input
+    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount = 0,
@@ -629,13 +661,233 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         .pVertexAttributeDescriptions = nullptr // optional
     };
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
+
+    // Input Assembly
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .primitiveRestartEnable = VK_FALSE
     };
 
+
+    // Viewports and scissors
+
+    // framebuffer uses swapchain images, and since swapchain's
+    // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
+    VkViewport viewport
+    {
+        .x = 0.0f,
+        .y = 0.f,
+        .width =  static_cast<float>(m_SwapChainExtent.width),
+        .height =  static_cast<float>(m_SwapChainExtent.height),
+        .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
+        .maxDepth = 0.0f,
+    };
+
+    VkRect2D scissor
+    {
+        .offset = {0, 0},
+        .extent = m_SwapChainExtent
+    };
+
+    // When using dynamic state the viewport & scissor don't need to be set now,
+    // they will be set/changed during "drawing time"
+    VkPipelineViewportStateCreateInfo viewportCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .viewportCount = 1,
+        .scissorCount = 1
+
+    };
+
+    // if not using dynamic state, you would need to add this additional
+    // information, since it will be immutable during "draw time"
+    // viewportCreateInfo.pViewports = &viewport;
+    // viewportCreateInfo.pScissors = &scissor;
+
+
+    // If you want to use multiple viewports or scissors at the same time using an array,
+    // you will need to set enable the GPU feature (logical device creation).
+
+
+    // Rasterizer
+
+    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE, // if enabled, rasterizer passes nothing to the framebuffer
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VK_CULL_MODE_BACK_BIT,
+        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        .depthBiasEnable = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f,    // optional
+        .depthBiasClamp = VK_FALSE,         // optional
+        .depthBiasSlopeFactor = 0.0f,       // optional
+        .lineWidth = 1.f,
+    };
+
+    // Depth Clamp:
+    // if true, fragments clamped to the near and far planes; if false, they are discarded
+
+    // Polygon Mode:
+    // Anything other than fill will require a GPU feature to be enabled
+    // VK_POLYGON_MODE_FILL : fill the area of the polygon with fragments
+    // VK_POLYGON_MODE_LINE : polygon edges are drawn as lines
+    // VK_POLYGON_MODE_POINT: polygon vertices are drawn as points
+
+    // Line Width:
+    // The maximum line width depends on the hardware
+    // Any line width higher than 1.0f, requires enabling a GPU feature.
+
+    // Cull mode:
+    // Type of face culling, can be disabled
+
+    // Front face:
+    // Vertex order for faces to be front-facing.
+    // Clockwise (CW) or counterclockwise (CCW)
+
+    // Depth bias:
+    // Depth value can be altered by adding with a constant value or value based on fragement's slope
+    // This can be useful for shadow mapping,
+    // since we aren't doing shawdow mapping, we disable depth bias.
+
+
+    // Multisampling:
+    // Requires enabling GPU feature
+
+    VkPipelineMultisampleStateCreateInfo multisampleCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+        .sampleShadingEnable = VK_FALSE,
+        .minSampleShading = 1.0f,           // optional
+        .pSampleMask = nullptr,             // optional
+        .alphaToCoverageEnable = VK_FALSE,  // optional
+        .alphaToOneEnable = VK_FALSE,       // optional
+    };
+
+    // Will be discussed more detailed later on
+
+
+    // Depth Stencil:
+    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable = VK_FALSE,
+        .depthWriteEnable = VK_FALSE,
+        .depthCompareOp = VK_COMPARE_OP_NEVER, // picked random compare operation
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+        .front = {},                // optional
+        .back = {},                // optional
+        .minDepthBounds = 0.0f,     // optional
+        .maxDepthBounds = 1.0f,     // optional
+    };
+
+    // Will be discussed more detailed later on
+
+
+    // Color blending:
+    // Two methods:
+    // -Mix old and new color value to get final color values
+    // -Combine old and new using bitwise operation
+
+    // Configuration per attached framebuffer
+    VkPipelineColorBlendAttachmentState colorBlendAttachment
+    {
+        .blendEnable = VK_FALSE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,     // optional
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,    // optional
+        .colorBlendOp = VK_BLEND_OP_ADD,                // optional
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,     // optional
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,    // optional
+        .alphaBlendOp = VK_BLEND_OP_ADD,                 // optional
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
+            | VK_COLOR_COMPONENT_A_BIT,
+    };
+
+    // Color blending pseudocode example:
+    /*
+    if (blendEnable)
+    {
+        finalColor.rgb = (srcColorBlendFactor * newColor.rgb) <ColorBlendOp> (dstColorBlendFactor *
+            oldColor.rgb);
+
+        finalColor.a = (srcColorBlendFactor * newColor.a) <ColorBlendOp> (dstColorBlendFactor *
+            oldColor.a);
+
+    }
+    else
+    {
+        finalColor = newColor;
+    }
+
+    finalColor = finalColor & colorWriteMask
+
+    */
+
+    // or use alpha blending
+    /*
+    finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
+    finalColor.a = newALpha.a;
+    */
+
+    // and then we need to set colorblending attachment to
+    /*
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    */
+
+    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY, // optional
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment,
+        .blendConstants =
+        {
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+        }
+    };
+
+    // for the other blending mode, the bitwise blending mode,
+    // change logicOpEnable to true, this will disregard the
+    // blend attachment for every attached framebuffer.
+
+
+    // We have disabled both modes with
+    // ColorBlendAttachment::blendEnabled set to false, and ColorBlendState::logicOpEnabled
+    // this results in the fragment colors not being modified.
+    // And then written to the framebuffer
+
+
+    // Pipeline layout
+    VkPipelineLayoutCreateInfo layoutCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 0,            // optional
+        .pSetLayouts = nullptr,         // optional
+        .pushConstantRangeCount = 0,    // optional
+        .pPushConstantRanges = nullptr, // optional
+    };
+
+
+    VkResult result = vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_PipelineLayout);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create pipeline layout"));
+    }
 
 }
 
@@ -648,7 +900,7 @@ VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char
         .pCode = reinterpret_cast<const uint32_t*>(code.data())
     };
 
-    VkShaderModule shaderModule;
+    VkShaderModule shaderModule{};
     const VkResult result = vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &shaderModule);
 
     if (result != VK_SUCCESS)
@@ -735,9 +987,9 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
 
     std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
 
-    for (const VkExtensionProperties& availableExtension : availableExtensions)
+    for (const auto& [extensionName, specVersion] : availableExtensions)
     {
-        requiredExtensions.erase(availableExtension.extensionName);
+        requiredExtensions.erase(extensionName);
     }
 
     // if all the required extensions are supported, return true
@@ -771,7 +1023,7 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
 
 bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device) const
 {
-    const QueueFamilyIndices indices = FindQueueFamilies(device);
+    const QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(device);
 
     const bool areRequiredDeviceExtensionsSupported = DoesDeviceSupportRequiredExtensions(device);
 
@@ -782,7 +1034,7 @@ bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device) const
         isSwapChainSuitable = !swapChainSupportDetails.Formats.empty() && !swapChainSupportDetails.PresentModes.empty();
     }
 
-    return indices.IsComplete() && areRequiredDeviceExtensionsSupported && isSwapChainSuitable;
+    return queueFamilyIndices.IsComplete() && areRequiredDeviceExtensionsSupported && isSwapChainSuitable;
 }
 
 std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
@@ -1060,14 +1312,15 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
 
 }
 
-std::vector<char> BAV::VulkanApplication::ReadFile(const std::string &filename)
+std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 {
     // ate: start reading from end of file
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())
     {
-        throw std::runtime_error( FUNCTION_NAME + std::string("File not found or unable to open"));
+        std::string errorMessage = std::string(" File (") + filename + std::string(") not found or unable to open");
+        throw std::runtime_error( FUNCTION_NAME + errorMessage);
     }
 
     // std::ifstream::tellg() returns the current position of the input pointer.

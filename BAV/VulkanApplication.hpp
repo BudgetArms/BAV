@@ -89,6 +89,7 @@ namespace BAV
         VkPhysicalDevice m_PhysicalDevice{ VK_NULL_HANDLE };
         VkDevice m_LogicalDevice{ VK_NULL_HANDLE };
         VkSwapchainKHR m_SwapChain{};
+        VkPipelineLayout m_PipelineLayout{};
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };
@@ -124,9 +125,9 @@ namespace BAV
 
         const  std::vector<std::string> m_DeviceExtensions =
         {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
         };
-
 
 
     };
