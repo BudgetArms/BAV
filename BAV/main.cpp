@@ -5,7 +5,7 @@
 
 int main()
 {
-    BAV::VulkanApplication application;
+    BAV::VulkanApplication application{};
 
     try
     {
