@@ -149,10 +149,13 @@ void BAV::VulkanApplication::InitVulkan()
     PickPhysicalDevice();
     CreateLocalDevice();
     CreateSwapChain();
+    CreateImageViews();
     CreateRenderPass();
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
+    CreateCommandBuffers();
+    CreateSyncObjects();
 }
 
 void BAV::VulkanApplication::CreateInstance()
@@ -239,11 +242,82 @@ void BAV::VulkanApplication::MainLoop()
     while (!glfwWindowShouldClose(m_Window))
     {
         glfwPollEvents();
+        DrawFrame();
     }
+
+    vkDeviceWaitIdle(m_LogicalDevice);
 }
 
 void BAV::VulkanApplication::DrawFrame()
 {
+    // Wait for fences
+    vkWaitForFences(m_LogicalDevice, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
+
+    // Reset fences
+    vkResetFences(m_LogicalDevice, 1, &m_InFlightFence);
+
+    uint32_t imageIndex{};
+    vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
+        m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    // Timeout:
+    //     if set to UINT64_MAX, it is disabled
+
+
+    // Recording command buffer
+    vkResetCommandBuffer(m_CommandBuffer, 0);
+    RecordCommandBuffer(m_CommandBuffer, imageIndex);
+
+
+    // Creation submit semaphores
+    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+    VkPipelineStageFlags waitStages[] =
+    {
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
+
+    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+
+    // Submit command buffer
+    VkSubmitInfo submitInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = waitSemaphores,
+        .pWaitDstStageMask = waitStages,
+
+        .commandBufferCount = 1,
+        .pCommandBuffers = &m_CommandBuffer,
+
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = signalSemaphores,
+    };
+
+
+    VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFence);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit draw command buffer"));
+    }
+
+
+    // Presentation
+
+    VkSwapchainKHR swapchains[] = { m_SwapChain };
+
+    VkPresentInfoKHR presentInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = signalSemaphores,
+        .swapchainCount = 1,
+        .pSwapchains = swapchains,
+        .pImageIndices = &imageIndex,
+        .pResults = nullptr,    // optional
+    };
+
+
+    vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 
 }
 
@@ -702,6 +776,18 @@ void BAV::VulkanApplication::CreateRenderPass()
     // pPreserveAttachments:    Attachments that are not used by this subpass,
     //                          but for which the data must be preserved
 
+    VkSubpassDependency dependency
+    {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    };
+
 
     // Render pass:
     VkRenderPassCreateInfo renderPassCreateInfo
@@ -711,6 +797,8 @@ void BAV::VulkanApplication::CreateRenderPass()
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
         .pSubpasses = &subpass,
+        .dependencyCount = 1,
+        .pDependencies = &dependency,
     };
 
     VkResult result = vkCreateRenderPass(m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass);
@@ -1125,8 +1213,11 @@ void BAV::VulkanApplication::CreateSyncObjects()
     VkFenceCreateInfo fenceCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
+    // signaled bit set on because otherwise the wait for fences
+    // in DrawFrame will never be signaled
 
     // Create semaphores
     VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
@@ -1255,7 +1346,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
 
 
     // Cmd begin pipeline
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GraphicsPipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
 
     // Viewports and scissors
