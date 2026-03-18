@@ -151,6 +151,8 @@ void BAV::VulkanApplication::InitVulkan()
     CreateSwapChain();
     CreateRenderPass();
     CreateGraphicsPipeline();
+    CreateFramebuffers();
+    CreateCommandPool();
 }
 
 void BAV::VulkanApplication::CreateInstance()
@@ -240,12 +242,28 @@ void BAV::VulkanApplication::MainLoop()
     }
 }
 
+void BAV::VulkanApplication::DrawFrame()
+{
+
+}
+
 void BAV::VulkanApplication::CleanUp()
 {
-   if (g_bEnableValidationLayers)
-   {
-       CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
-   }
+    if (g_bEnableValidationLayers)
+    {
+        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
+    }
+
+    vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(m_LogicalDevice, m_RenderFinishedSemaphore, nullptr);
+
+    vkDestroyFence(m_LogicalDevice, m_InFlightFence, nullptr);
+
+
+    for (const auto framebuffer : m_SwapChainFramebuffers)
+    {
+        vkDestroyFramebuffer(m_LogicalDevice, framebuffer, nullptr);
+    }
 
     vkDestroyPipeline(m_LogicalDevice, m_GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
@@ -766,27 +784,6 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         .primitiveRestartEnable = VK_FALSE
     };
 
-
-    // Viewports and scissors
-
-    // framebuffer uses swapchain images, and since swapchain's
-    // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
-    VkViewport viewport
-    {
-        .x = 0.0f,
-        .y = 0.f,
-        .width =  static_cast<float>(m_SwapChainExtent.width),
-        .height =  static_cast<float>(m_SwapChainExtent.height),
-        .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
-        .maxDepth = 0.0f,
-    };
-
-    VkRect2D scissor
-    {
-        .offset = {0, 0},
-        .extent = m_SwapChainExtent
-    };
-
     // When using dynamic state the viewport & scissor don't need to be set now,
     // they will be set/changed during "drawing time"
     VkPipelineViewportStateCreateInfo viewportCreateInfo
@@ -1025,6 +1022,137 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
 }
 
+void BAV::VulkanApplication::CreateFramebuffers()
+{
+    m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+
+    for (size_t i = 0; i < m_SwapChainFramebuffers.size(); ++i)
+    {
+        VkImageView attachments[] =
+        {
+            m_SwapChainImageViews[i]
+        };
+
+        VkFramebufferCreateInfo framebufferCreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = m_RenderPass,
+            .attachmentCount = 1,
+            .pAttachments = attachments,
+            .width = m_SwapChainExtent.width,
+            .height = m_SwapChainExtent.height,
+            .layers = 1,
+        };
+
+
+        VkResult result = vkCreateFramebuffer(m_LogicalDevice, &framebufferCreateInfo, nullptr,
+            &m_SwapChainFramebuffers[i]);
+
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME +
+                std::string(" Failed to create framebuffer (index: " + std::to_string(i)
+                + ")"));
+        }
+
+    }
+
+}
+
+void BAV::VulkanApplication::CreateCommandPool()
+{
+    QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
+
+    VkCommandPoolCreateInfo commandPoolCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value(),
+    };
+
+    // flags:
+    // VK_COMMAND_POOL_CREATE_TRANSIENT_BIT:
+    //     Hint that command buffers are rerecorded with new commands
+    //     very often (may change memory allocation behavior)
+    // VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT:
+    //     Allow command buffers to be rerecorded individually,
+    //     without this flag they all have to be reset together
+
+    VkResult result = vkCreateCommandPool(m_LogicalDevice, &commandPoolCreateInfo, nullptr, &m_CommandPool);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create command pool"));
+    }
+
+
+}
+
+void BAV::VulkanApplication::CreateCommandBuffers()
+{
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = m_CommandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+
+    // level:
+    // VK_COMMAND_BUFFER_LEVEL_PRIMARY:
+    //     Can be submitted to a queue for execution, but cannot be called from other command buffers.
+    // VK_COMMAND_BUFFER_LEVEL_SECONDARY:
+    //     Cannot be submitted directly, but can be called from primary command buffers.
+
+    // CommandBufferCount:
+    // the amount of command buffers, since only using 1, we set this to one
+
+
+    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &commandBufferAllocateInfo, &m_CommandBuffer);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffers"));
+    }
+
+}
+
+void BAV::VulkanApplication::CreateSyncObjects()
+{
+    VkSemaphoreCreateInfo semaphoreCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+
+    VkFenceCreateInfo fenceCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+    };
+
+
+    // Create semaphores
+    VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+        &m_ImageAvailableSemaphore);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable"));
+    }
+
+
+    result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+        &m_RenderFinishedSemaphore);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed"));
+    }
+
+
+    result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFence);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create fence InFlight"));
+    }
+
+}
+
 VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char>& code) const
 {
     const VkShaderModuleCreateInfo shaderModuleCreateInfo
@@ -1058,17 +1186,15 @@ void BAV::VulkanApplication::RecreateSwapChain()
     // high dynamic range monitor (or the other way around, I think).
     CreateSwapChain();
     CreateImageViews();
-    // TODO: uncomment CreateFrameBuffers after FrameBuffer's are created
-    // CreatFrameBuffers();
+    CreateFramebuffers();
 }
 
 void BAV::VulkanApplication::CleanUpSwapChain() const
 {
-    // TODO: uncomment this after FrameBuffer's are created
-    // for (const auto frameBuffer : m_SwapChainFrameBuffers)
-    // {
-    //     vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
-    // }
+    for (const auto frameBuffer : m_SwapChainFramebuffers)
+    {
+        vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
+    }
 
     for (const auto imageView : m_SwapChainImageViews)
     {
@@ -1076,6 +1202,99 @@ void BAV::VulkanApplication::CleanUpSwapChain() const
     }
 
     vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
+
+}
+
+void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex)
+{
+    VkCommandBufferBeginInfo commandBufferBeginInfo
+    {
+        .sType =  VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = 0,                     // optional
+        .pInheritanceInfo = nullptr,    // optional
+    };
+
+    // Flags:
+    // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT:
+    //     The command buffer will be rerecorded right after executing it once.
+    // VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT:
+    //     This is a secondary command buffer that will be
+    //     entirely within a single render pass.
+    // VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT:
+    //     The command buffer can be resubmitted while it
+    //     is also already pending execution.
+
+
+    VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &commandBufferBeginInfo);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
+    }
+
+    VkClearValue clearColor = {0.f, 0.f, 0.f, 1.f};
+
+    VkRenderPassBeginInfo renderPassBeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = m_RenderPass,
+        .framebuffer = m_SwapChainFramebuffers[imageIndex],
+        .renderArea = { .offset = {0, 0}, .extent = m_SwapChainExtent },
+        .clearValueCount = 1,
+        .pClearValues = &clearColor,
+    };
+
+
+    // Begin Render Pass:
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Subpasses content:
+    // VK_SUBPASS_CONTENTS_INLINE:
+    //     The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
+    // VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:
+    //     The render pass commands will be executed from secondary command buffers.
+
+
+    // Cmd begin pipeline
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GraphicsPipeline);
+
+
+    // Viewports and scissors
+
+    // framebuffer uses swapchain images, and since swapchain's
+    // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
+    VkViewport viewport
+    {
+        .x = 0.0f,
+        .y = 0.f,
+        .width =  static_cast<float>(m_SwapChainExtent.width),
+        .height =  static_cast<float>(m_SwapChainExtent.height),
+        .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
+        .maxDepth = 1.0f,
+    };
+
+    VkRect2D scissor
+    {
+        .offset = {0, 0},
+        .extent = m_SwapChainExtent
+    };
+
+
+    // Set commands viewport & scissor
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    // Set command draw
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+    // End render pass
+    vkCmdEndRenderPass(commandBuffer);
+
+    // End command buffer
+    result = vkEndCommandBuffer(commandBuffer);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to record command buffer"));
+    }
 
 }
 
@@ -1087,7 +1306,7 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Couldn't get layer count");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Couldn't get layer count"));
     }
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -1095,7 +1314,7 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Couldn't get layer properties");
+        throw std::runtime_error(FUNCTION_NAME + std::string("Couldn't get layer properties"));
     }
 
 

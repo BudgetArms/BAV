@@ -50,6 +50,7 @@ namespace BAV
         void InitVulkan();
         void CreateInstance();
         void MainLoop();
+        void DrawFrame();
         void CleanUp();
 
         void SetupDebugMessenger();
@@ -60,14 +61,19 @@ namespace BAV
         void CreateImageViews();
         void CreateRenderPass();
         void CreateGraphicsPipeline();
+        void CreateFramebuffers();
+        void CreateCommandPool();
+        void CreateCommandBuffers();
+        void CreateSyncObjects();
 
         [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
 
         void RecreateSwapChain();
         void CleanUpSwapChain() const;
-
         // TODO: add the swap chain recreation functions related
         // to drawFrame & Frame buffers, when both are added in the future
+        void RecordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex);
+
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;
@@ -93,6 +99,15 @@ namespace BAV
         VkRenderPass m_RenderPass{};
         VkPipelineLayout m_PipelineLayout{};
         VkPipeline m_GraphicsPipeline{};
+        VkCommandPool m_CommandPool{};
+        VkCommandBuffer m_CommandBuffer{};
+
+        // Fences & Semaphores
+        VkSemaphore m_ImageAvailableSemaphore{};
+        VkSemaphore m_RenderFinishedSemaphore{};
+        VkFence m_InFlightFence{};
+
+
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };
@@ -113,6 +128,7 @@ namespace BAV
         std::vector<VkImageView> m_SwapChainImageViews{};
         VkFormat m_SwapChainImageFormat{};
         VkExtent2D m_SwapChainExtent{};
+        std::vector<VkFramebuffer> m_SwapChainFramebuffers{};
 
         static constexpr VkFormat swapChainFormat{ VK_FORMAT_B8G8R8A8_SRGB };
         static constexpr VkColorSpaceKHR swapChainColorSpace{ VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
