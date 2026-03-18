@@ -342,6 +342,7 @@ void BAV::VulkanApplication::CleanUp()
         vkDestroyFence(m_LogicalDevice, m_InFlightFences[i], nullptr);
     }
 
+    vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 
     for (const auto framebuffer : m_SwapChainFramebuffers)
     {
@@ -353,11 +354,6 @@ void BAV::VulkanApplication::CleanUp()
     vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
 
     CleanUpSwapChain();
-
-    for (const VkImageView& imageView : m_SwapChainImageViews)
-    {
-        vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
-    }
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
 
