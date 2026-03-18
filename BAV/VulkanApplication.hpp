@@ -100,12 +100,12 @@ namespace BAV
         VkPipelineLayout m_PipelineLayout{};
         VkPipeline m_GraphicsPipeline{};
         VkCommandPool m_CommandPool{};
-        VkCommandBuffer m_CommandBuffer{};
+        std::vector<VkCommandBuffer> m_CommandBuffers{};
 
         // Fences & Semaphores
-        VkSemaphore m_ImageAvailableSemaphore{};
-        VkSemaphore m_RenderFinishedSemaphore{};
-        VkFence m_InFlightFence{};
+        std::vector<VkSemaphore> m_ImageAvailableSemaphores{};
+        std::vector<VkSemaphore> m_RenderFinishedSemaphores{};
+        std::vector<VkFence> m_InFlightFences{};
 
 
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
@@ -122,6 +122,9 @@ namespace BAV
         const std::string m_Title{ "HelloTriangle" };
 
         static constexpr bool m_bPrintWarnings{ true };
+
+        int m_CurrentFrame{};
+
 
         // Swap Chain
         std::vector<VkImage> m_SwapChainImages{};

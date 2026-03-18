@@ -23,7 +23,10 @@
     constexpr bool g_bEnableValidationLayers = true;
 #endif
 
+
 #define FUNCTION_NAME __FUNCTION__
+
+constexpr int g_MaxFramesInFlight = 2;
 
 
 void BAV::VulkanApplication::Run()
@@ -251,32 +254,32 @@ void BAV::VulkanApplication::MainLoop()
 void BAV::VulkanApplication::DrawFrame()
 {
     // Wait for fences
-    vkWaitForFences(m_LogicalDevice, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
     // Reset fences
-    vkResetFences(m_LogicalDevice, 1, &m_InFlightFence);
+    vkResetFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]);
 
     uint32_t imageIndex{};
     vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
-        m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
     // Timeout:
     //     if set to UINT64_MAX, it is disabled
 
 
     // Recording command buffer
-    vkResetCommandBuffer(m_CommandBuffer, 0);
-    RecordCommandBuffer(m_CommandBuffer, imageIndex);
+    vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
+    RecordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
 
 
     // Creation submit semaphores
-    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
     VkPipelineStageFlags waitStages[] =
     {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
 
-    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
 
     // Submit command buffer
     VkSubmitInfo submitInfo
@@ -287,14 +290,14 @@ void BAV::VulkanApplication::DrawFrame()
         .pWaitDstStageMask = waitStages,
 
         .commandBufferCount = 1,
-        .pCommandBuffers = &m_CommandBuffer,
+        .pCommandBuffers = &m_CommandBuffers[m_CurrentFrame],
 
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = signalSemaphores,
     };
 
 
-    VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFence);
+    VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit draw command buffer"));
@@ -319,6 +322,9 @@ void BAV::VulkanApplication::DrawFrame()
 
     vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 
+    // increment frame
+    m_CurrentFrame = (m_CurrentFrame + 1) % g_MaxFramesInFlight;
+
 }
 
 void BAV::VulkanApplication::CleanUp()
@@ -328,10 +334,13 @@ void BAV::VulkanApplication::CleanUp()
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
 
-    vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(m_LogicalDevice, m_RenderFinishedSemaphore, nullptr);
+    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    {
+        vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
 
-    vkDestroyFence(m_LogicalDevice, m_InFlightFence, nullptr);
+        vkDestroyFence(m_LogicalDevice, m_InFlightFences[i], nullptr);
+    }
 
 
     for (const auto framebuffer : m_SwapChainFramebuffers)
@@ -1177,12 +1186,14 @@ void BAV::VulkanApplication::CreateCommandPool()
 
 void BAV::VulkanApplication::CreateCommandBuffers()
 {
+    m_CommandBuffers.resize(g_MaxFramesInFlight);
+
     VkCommandBufferAllocateInfo commandBufferAllocateInfo
     {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = m_CommandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
+        .commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size()),
     };
 
     // level:
@@ -1195,7 +1206,8 @@ void BAV::VulkanApplication::CreateCommandBuffers()
     // the amount of command buffers, since only using 1, we set this to one
 
 
-    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &commandBufferAllocateInfo, &m_CommandBuffer);
+    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice,
+        &commandBufferAllocateInfo, m_CommandBuffers.data());
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffers"));
@@ -1205,6 +1217,10 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 
 void BAV::VulkanApplication::CreateSyncObjects()
 {
+    m_ImageAvailableSemaphores.resize(g_MaxFramesInFlight);
+    m_RenderFinishedSemaphores.resize(g_MaxFramesInFlight);
+    m_InFlightFences.resize(g_MaxFramesInFlight);
+
     VkSemaphoreCreateInfo semaphoreCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -1220,26 +1236,30 @@ void BAV::VulkanApplication::CreateSyncObjects()
     // in DrawFrame will never be signaled
 
     // Create semaphores
-    VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-        &m_ImageAvailableSemaphore);
-    if (result != VK_SUCCESS)
+    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable"));
-    }
+        VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+            &m_ImageAvailableSemaphores[i]);
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable, index: " + std::to_string(i)));
+        }
 
 
-    result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-        &m_RenderFinishedSemaphore);
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed"));
-    }
+        result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+            &m_RenderFinishedSemaphores[i]);
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+        }
 
 
-    result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFence);
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create fence InFlight"));
+        result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]);
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create fence InFlight, index: " + std::to_string(i)));
+        }
+
     }
 
 }
@@ -1316,7 +1336,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
     //     is also already pending execution.
 
 
-    VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &commandBufferBeginInfo);
+    VkResult result = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
