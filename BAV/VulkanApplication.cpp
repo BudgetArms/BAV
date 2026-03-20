@@ -23,9 +23,9 @@
     constexpr bool g_bEnableValidationLayers = true;
 #endif
 
-
 #define FUNCTION_NAME __FUNCTION__
 
+constexpr bool g_UseSlangShaders = false;
 constexpr int g_MaxFramesInFlight = 2;
 
 
@@ -37,6 +37,14 @@ void BAV::VulkanApplication::Run()
     std::cout << "DEBUG\n" << '\n';
 #endif
 
+    if constexpr(g_UseSlangShaders)
+    {
+        std::cout << "Using Slang Shaders" << '\n';
+    }
+    else
+    {
+        std::cout << "Using GLSL Shaders" << '\n';
+    }
 
     InitWindow();
     InitVulkan();
@@ -369,11 +377,12 @@ void BAV::VulkanApplication::CleanUp()
 void BAV::VulkanApplication::SetupDebugMessenger()
 {
     if (!g_bEnableValidationLayers)
+    {
         return;
+    }
 
     VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessenger{};
     CreationHelper::PopulateDebugMessengerCreateInfo(debugUtilsMessenger);
-
 
     const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &debugUtilsMessenger, nullptr,
         &m_DebugMessenger);
@@ -817,31 +826,54 @@ void BAV::VulkanApplication::CreateRenderPass()
 void BAV::VulkanApplication::CreateGraphicsPipeline()
 {
     // Shader Stage
-    const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangle.spv");
-    VkShaderModule shaderModule = CreateShaderModule(shaderCode);
-
     VkPipelineShaderStageCreateInfo vertexShaderCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage = VK_SHADER_STAGE_VERTEX_BIT,
-        .module = shaderModule,
-        .pName = "VertexMain"
     };
 
     VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .module = shaderModule,
-        .pName = "FragmentMain"
     };
+
+    VkShaderModule slangShaderModule{};
+    VkShaderModule vertShaderModule{};
+    VkShaderModule fragShaderModule{};
+
+    if constexpr(g_UseSlangShaders)
+    {
+        const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangleSlang.spv");
+        slangShaderModule = CreateShaderModule(shaderCode);
+
+        vertexShaderCreateInfo.module = slangShaderModule;
+        vertexShaderCreateInfo.pName = "VertexMain";
+
+        fragmentShaderCreateInfo.module = slangShaderModule;
+        fragmentShaderCreateInfo.pName = "FragmentMain";
+
+    }
+    else
+    {
+        const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
+        const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
+
+        vertShaderModule = CreateShaderModule(vertShaderCode);
+        fragShaderModule = CreateShaderModule(fragShaderCode);
+
+        vertexShaderCreateInfo.module = vertShaderModule;
+        vertexShaderCreateInfo.pName = "main";
+
+        fragmentShaderCreateInfo.module = fragShaderModule;
+        fragmentShaderCreateInfo.pName = "main";
+    }
 
     VkPipelineShaderStageCreateInfo shaderStages[] =
     {
         vertexShaderCreateInfo,
         fragmentShaderCreateInfo
     };
-
 
     // Dynamic State
     std::vector<VkDynamicState> dynamicStates
@@ -1109,7 +1141,15 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
 
     // Destroy shader module
-    vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
+    if constexpr(g_UseSlangShaders)
+    {
+        vkDestroyShaderModule(m_LogicalDevice, slangShaderModule, nullptr);
+    }
+    else
+    {
+        vkDestroyShaderModule(m_LogicalDevice, vertShaderModule, nullptr);
+        vkDestroyShaderModule(m_LogicalDevice, fragShaderModule, nullptr);
+    }
 
 
 

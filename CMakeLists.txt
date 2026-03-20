@@ -68,8 +68,9 @@ target_include_directories(
 
 
 find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/bin REQUIRED)
+find_program(GLSLANG_VALIDATOR "glslangValidator" HINTS $ENV{VULKAN_SDK}/bin REQUIRED)
 
-# from khonos vulkan tutorial
+
 function(add_slang_shader_target TARGET)
 
     cmake_parse_arguments("SHADER" "" "" "SOURCE" ${ARGN})
@@ -83,6 +84,7 @@ function(add_slang_shader_target TARGET)
 
      # Get Shader source name (by removing .slang from shader source)
     string(REPLACE ".slang" "" SHADER_NAME ${SHADER_SOURCE})
+    string(APPEND SHADER_NAME "Slang")
 
     # Compile Shaders
     add_custom_command(
@@ -98,7 +100,57 @@ function(add_slang_shader_target TARGET)
 
         WORKING_DIRECTORY ${SHADERS_DIR}
         DEPENDS ${SHADERS_DIR} ${SHADER_SOURCES}
-        COMMENT "Compiling Shaders (Slang)"
+        COMMENT "Compiling Shader (Slang)"
+        VERBATIM
+    )
+
+    add_custom_target(
+        ${TARGET}
+        DEPENDS ${SHADERS_DIR}/${SHADER_NAME}.spv
+    )
+
+endfunction()
+
+
+function(add_glsl_shader_target TARGET)
+
+    cmake_parse_arguments("SHADER" "" "" "SOURCE" ${ARGN})
+    set(SHADERS_DIR ${CMAKE_CURRENT_LIST_DIR}/Shaders)
+
+    add_custom_command(
+        OUTPUT ${SHADERS_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADERS_DIR}
+    )
+
+    if( ${SHADER_SOURCE} MATCHES ".frag")
+
+        string(REPLACE ".frag" "" SHADER_NAME ${SHADER_SOURCE})
+        string(APPEND SHADER_NAME "Frag")
+
+    elseif( ${SHADER_SOURCE} MATCHES ".vert")
+
+        string(REPLACE ".vert" "" SHADER_NAME ${SHADER_SOURCE})
+        string(APPEND SHADER_NAME "Vert")
+
+    else()
+
+        string(REPLACE "." "" SHADER_NAME ${SHADER_SOURCE})
+        string(APPEND SHADER_NAME "Idk")
+
+    endif()
+
+    # Compile Shaders
+    add_custom_command(
+        OUTPUT ${SHADERS_DIR}/${SHADER_NAME}.spv
+        COMMAND
+            glslangvalidator
+            -V
+            ${SHADER_SOURCE}
+            -o ${SHADER_NAME}.spv
+
+        WORKING_DIRECTORY ${SHADERS_DIR}
+        DEPENDS ${SHADERS_DIR} ${SHADER_SOURCES}
+        COMMENT "Compiling Shader (GLSL)"
         VERBATIM
     )
 
@@ -115,7 +167,21 @@ add_slang_shader_target(
     SOURCE "RedTriangle.slang"
 )
 
+add_glsl_shader_target(
+    GlslVertexShaderTarget
+    SOURCE "RedTriangle.vert"
+)
+
+add_glsl_shader_target(
+    GlslFragmentShaderTarget
+    SOURCE "RedTriangle.frag"
+)
+
 add_dependencies(${PROJECT_NAME} SlangShadersTarget)
+
+add_dependencies(${PROJECT_NAME} GlslVertexShaderTarget)
+add_dependencies(${PROJECT_NAME} GlslFragmentShaderTarget)
+
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
