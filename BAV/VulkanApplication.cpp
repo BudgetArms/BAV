@@ -884,6 +884,7 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     if constexpr(g_UseSlangShaders)
     {
         const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangleSlang.spv");
+        // const std::vector<char> shaderCode = ReadFile("Shaders/ShaderSlang.spv");
         slangShaderModule = CreateShaderModule(shaderCode);
 
         vertexShaderCreateInfo.module = slangShaderModule;
@@ -897,6 +898,9 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     {
         const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
         const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
+
+        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderVert.spv");
+        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderFrag.spv");
 
         vertShaderModule = CreateShaderModule(vertShaderCode);
         fragShaderModule = CreateShaderModule(fragShaderCode);

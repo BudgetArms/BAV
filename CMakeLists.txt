@@ -173,25 +173,45 @@ function(add_glsl_shader_target TARGET)
 endfunction()
 
 
+
+# Shaders
 add_slang_shader_target(
-    SlangShadersTarget
+    SlangShader
+    SOURCE "Shader.slang"
+)
+
+add_glsl_shader_target(
+    GLSLVertShader
+    SOURCE "Shader.vert"
+)
+add_glsl_shader_target(
+    GLSLFragShader
+    SOURCE "Shader.frag"
+)
+
+# Red Triangle Shaders
+add_slang_shader_target(
+    RedTriangleSlangShader
     SOURCE "RedTriangle.slang"
 )
 
 add_glsl_shader_target(
-    GlslVertexShaderTarget
+    RedTriangleGLSLVertShader
     SOURCE "RedTriangle.vert"
 )
-
 add_glsl_shader_target(
-    GlslFragmentShaderTarget
+    RedTriangleGLSLFragShader
     SOURCE "RedTriangle.frag"
 )
 
-add_dependencies(${PROJECT_NAME} SlangShadersTarget)
+add_dependencies(${PROJECT_NAME} SlangShader)
+add_dependencies(${PROJECT_NAME} GLSLVertShader)
+add_dependencies(${PROJECT_NAME} GLSLFragShader)
 
-add_dependencies(${PROJECT_NAME} GlslVertexShaderTarget)
-add_dependencies(${PROJECT_NAME} GlslFragmentShaderTarget)
+add_dependencies(${PROJECT_NAME} RedTriangleSlangShader)
+add_dependencies(${PROJECT_NAME} RedTriangleGLSLVertShader)
+add_dependencies(${PROJECT_NAME} RedTriangleGLSLFragShader)
+
 
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

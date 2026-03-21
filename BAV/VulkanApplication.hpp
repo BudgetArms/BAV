@@ -111,8 +111,6 @@ namespace BAV
         std::vector<VkSemaphore> m_RenderFinishedSemaphores{};
         std::vector<VkFence> m_InFlightFences{};
 
-        VmaAllocator m_VmaAllocator = nullptr;
-
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface { nullptr };
