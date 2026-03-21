@@ -6,6 +6,8 @@
 
 #include <vulkan/vulkan.h>
 
+
+
 class GLFWwindow;
 
 namespace BAV
@@ -47,6 +49,7 @@ namespace BAV
         void InitWindow();
 
 
+
         void InitVulkan();
         void CreateInstance();
         void MainLoop();
@@ -57,6 +60,7 @@ namespace BAV
         void CreateSurface();
         void PickPhysicalDevice();
         void CreateLocalDevice();
+        void CreateVulkanMemoryAllocator();
         void CreateSwapChain();
         void CreateImageViews();
         void CreateRenderPass();
@@ -107,6 +111,7 @@ namespace BAV
         std::vector<VkSemaphore> m_RenderFinishedSemaphores{};
         std::vector<VkFence> m_InFlightFences{};
 
+        VmaAllocator m_VmaAllocator = nullptr;
 
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 

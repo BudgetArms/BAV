@@ -14,6 +14,7 @@
 
 #include <vulkan/vk_enum_string_helper.h>
 
+
 #include "ConversionHelpers.hpp"
 #include "CreationHelper.hpp"
 
@@ -27,6 +28,14 @@
 
 constexpr bool g_UseSlangShaders = false;
 constexpr int g_MaxFramesInFlight = 2;
+
+
+#define VMA_IMPLEMENTATION
+#define VMA_STATS_STRING_ENABLED 1
+#define VMA_CPP20 1
+#include <vk_mem_alloc.h>
+
+VmaAllocator g_VmaAllocator = nullptr;
 
 
 void BAV::VulkanApplication::Run()
@@ -159,6 +168,9 @@ void BAV::VulkanApplication::InitVulkan()
 
     PickPhysicalDevice();
     CreateLocalDevice();
+
+    CreateVulkanMemoryAllocator();
+
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
@@ -342,6 +354,8 @@ void BAV::VulkanApplication::CleanUp()
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
 
+    vmaDestroyAllocator(g_VmaAllocator);
+
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
@@ -449,13 +463,13 @@ void BAV::VulkanApplication::PickPhysicalDevice()
 
 void BAV::VulkanApplication::CreateLocalDevice()
 {
-    QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+    auto [GraphicsFamily, PresentFamily] = FindQueueFamilies(m_PhysicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamiliesIndex =
     {
-        indices.GraphicsFamily.value(),
-        indices.PresentFamily.value()
+        GraphicsFamily.value(),
+        PresentFamily.value()
     };
 
     constexpr float queuePriority = 1.f;
@@ -524,16 +538,41 @@ void BAV::VulkanApplication::CreateLocalDevice()
     constexpr uint32_t queueIndex = 0;
 
 
-    if (indices.GraphicsFamily.value() == indices.PresentFamily.value())
+    if (GraphicsFamily.value() == PresentFamily.value())
     {
-        vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        vkGetDeviceQueue(m_LogicalDevice, GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
         m_PresentQueue = m_GraphicsQueue;
     }
     else
     {
-        vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
-        vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily.value(), queueIndex, &m_PresentQueue);
+        vkGetDeviceQueue(m_LogicalDevice, GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
+        vkGetDeviceQueue(m_LogicalDevice, PresentFamily.value(), queueIndex, &m_PresentQueue);
     }
+
+}
+
+void BAV::VulkanApplication::CreateVulkanMemoryAllocator()
+{
+    VmaAllocatorCreateInfo allocatorCreateInfo
+    {
+        .flags = 0,
+        .physicalDevice = m_PhysicalDevice,
+        .device = m_LogicalDevice,
+        .preferredLargeHeapBlockSize = 0,   // will default to 256MiB
+        .pAllocationCallbacks = nullptr,
+        .pDeviceMemoryCallbacks = nullptr,
+        .pVulkanFunctions = nullptr,
+        .instance = m_Instance,
+        .vulkanApiVersion = VK_API_VERSION_1_4,
+    };
+
+    const VkResult result = vmaCreateAllocator(&allocatorCreateInfo, &g_VmaAllocator);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create VMA"));
+    }
+
+
 
 }
 

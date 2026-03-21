@@ -36,6 +36,16 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glm)
 
+# Add VMA (Vulkan Memory Allocator)
+FetchContent_Declare(
+        vma
+        GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+        GIT_TAG v3.3.0
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(vma)
+
 
 add_executable(
         ${PROJECT_NAME}
@@ -54,6 +64,7 @@ target_link_libraries(
         glfw
         glm
         Vulkan::Vulkan
+        GPUOpen::VulkanMemoryAllocator
 )
 
 
