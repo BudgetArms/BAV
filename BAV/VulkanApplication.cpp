@@ -8,15 +8,23 @@
 #include <fstream>
 #include <set>
 #include <ios>
+#include <array>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vk_enum_string_helper.h>
+#include <glm/glm.hpp>
+
+#define VMA_IMPLEMENTATION
+#define VMA_STATS_STRING_ENABLED 1
+#define VMA_CPP20 1
+#include <vk_mem_alloc.h>
 
 
 #include "ConversionHelpers.hpp"
 #include "CreationHelper.hpp"
+
 
 #ifdef NDEBUG
     constexpr bool g_bEnableValidationLayers = false;
@@ -30,12 +38,66 @@ constexpr bool g_UseSlangShaders = false;
 constexpr int g_MaxFramesInFlight = 2;
 
 
-#define VMA_IMPLEMENTATION
-#define VMA_STATS_STRING_ENABLED 1
-#define VMA_CPP20 1
-#include <vk_mem_alloc.h>
-
 VmaAllocator g_VmaAllocator = nullptr;
+
+
+struct Vertex
+{
+    glm::vec2 position;
+    glm::vec3 color;
+
+    static VkVertexInputBindingDescription GetBindingDescription()
+    {
+        VkVertexInputBindingDescription bindingDescription
+        {
+            .binding = 0,
+            .stride = sizeof(Vertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+        };
+
+
+        // InputRate:
+        // VK_VERTEX_INPUT_RATE_VERTEX:
+        //     Move to the next data entry after each vertex
+        // VK_VERTEX_INPUT_RATE_INSTANCE:
+        //     Move to the next data entry after each instance
+
+        return bindingDescription;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 2> inputAttributeDescriptions
+        {
+            VkVertexInputAttributeDescription
+            {
+                .location = 0,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .offset = offsetof(Vertex, position),
+            },
+            VkVertexInputAttributeDescription
+            {
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = offsetof(Vertex, color),
+            }
+
+        };
+
+        return inputAttributeDescriptions;
+    }
+
+};
+
+const std::vector<Vertex> vertices =
+{
+    {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+};
+
 
 
 void BAV::VulkanApplication::Run()
@@ -839,6 +901,7 @@ void BAV::VulkanApplication::CreateRenderPass()
 
         .srcAccessMask = 0,
         .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
     };
 
 
@@ -932,15 +995,18 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         .pDynamicStates = dynamicStates.data()
     };
 
+    // SOA
+    const auto bindingDescription = Vertex::GetBindingDescription();
+    const auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
     // Vertex Input
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = nullptr, // optional
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = nullptr // optional
+        .vertexBindingDescriptionCount = 1,
+        .pVertexBindingDescriptions = &bindingDescription,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+        .pVertexAttributeDescriptions = attributeDescriptions.data(),
     };
 
 
