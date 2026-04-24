@@ -1355,42 +1355,32 @@ void BAV::VulkanApplication::CreateCommandPool()
 
 void BAV::VulkanApplication::CreateVertexBuffer()
 {
-    constexpr VkBufferCreateInfo vertexBufferCreateInfo
+    constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
+
+    constexpr VkBufferUsageFlags bufferUsageFlags
     {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = g_Vertices.size() * sizeof(Vertex),
-        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
     };
 
-    constexpr VmaAllocationCreateInfo vertexBufferAllocInfo
+    constexpr VmaMemoryUsage memoryUsage
     {
-        .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-        .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        .preferredFlags = 0,
+        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
     };
 
-    const VkResult result = vmaCreateBuffer(
-        g_VmaAllocator,
-        &vertexBufferCreateInfo,
-        &vertexBufferAllocInfo,
-        &m_VertexBuffer,
-        &m_VertexBufferAllocation,
-        nullptr);
-
-    if (result != VK_SUCCESS)
+    constexpr VmaAllocationCreateFlags allocationCreateInfo
     {
-        throw std::runtime_error("Failed to create vertex buffer");
-    }
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    };
+
+
+    CreateBuffer(bufferSize, bufferUsageFlags, memoryUsage, allocationCreateInfo,
+        m_VertexBufferAllocation, m_VertexBuffer);
 
     // Add vertices data
-    constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
     void* data;
     vmaMapMemory(g_VmaAllocator, m_VertexBufferAllocation, &data);
     memcpy(data, g_Vertices.data(), bufferSize);
     vmaUnmapMemory(g_VmaAllocator, m_VertexBufferAllocation);
-
 
 }
 
@@ -1501,6 +1491,39 @@ VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char
     }
 
     return shaderModule;
+}
+
+void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usageFlags,
+    const VmaMemoryUsage memoryUsage, const VmaAllocationCreateFlags allocationFlags,
+    VmaAllocation& allocation, VkBuffer& buffer)
+{
+    const VkBufferCreateInfo bufferCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = size,
+        .usage = usageFlags,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+
+    const VmaAllocationCreateInfo allocationCreateInfo
+    {
+        .flags = allocationFlags,
+        .usage = memoryUsage,
+    };
+
+    const VkResult result = vmaCreateBuffer(
+        g_VmaAllocator,
+        &bufferCreateInfo,
+        &allocationCreateInfo,
+        &buffer,
+        &allocation,
+        nullptr);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create vertex buffer");
+    }
+
 }
 
 void BAV::VulkanApplication::RecreateSwapChain()
