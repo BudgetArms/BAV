@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <vulkan/vulkan.h>
-
+#include <glm/glm.hpp>
 
 
 class GLFWwindow;
@@ -29,7 +29,6 @@ namespace BAV
         VkSurfaceCapabilitiesKHR Capabilities;
         std::vector<VkSurfaceFormatKHR> Formats;
         std::vector<VkPresentModeKHR> PresentModes;
-
     };
 
     class VulkanApplication
@@ -67,6 +66,7 @@ namespace BAV
         void CreateGraphicsPipeline();
         void CreateFramebuffers();
         void CreateCommandPool();
+        void CreateVertexBuffer();
         void CreateCommandBuffers();
         void CreateSyncObjects();
 
@@ -104,6 +104,9 @@ namespace BAV
         VkPipelineLayout m_PipelineLayout{};
         VkPipeline m_GraphicsPipeline{};
         VkCommandPool m_CommandPool{};
+
+        VkBuffer m_VertexBuffer{};
+
         std::vector<VkCommandBuffer> m_CommandBuffers{};
 
         // Fences & Semaphores

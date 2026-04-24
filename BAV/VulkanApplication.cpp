@@ -34,6 +34,8 @@
 
 #define FUNCTION_NAME __FUNCTION__
 
+constexpr bool g_bEnableBrokenSynchronization = false;
+
 constexpr bool g_UseSlangShaders = false;
 constexpr int g_MaxFramesInFlight = 2;
 
@@ -48,7 +50,7 @@ struct Vertex
 
     static VkVertexInputBindingDescription GetBindingDescription()
     {
-        VkVertexInputBindingDescription bindingDescription
+        const VkVertexInputBindingDescription bindingDescription
         {
             .binding = 0,
             .stride = sizeof(Vertex),
@@ -91,7 +93,7 @@ struct Vertex
 
 };
 
-const std::vector<Vertex> vertices =
+const std::vector<Vertex> g_Vertices =
 {
     {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
     {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -239,6 +241,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
+    CreateVertexBuffer();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -335,33 +338,43 @@ void BAV::VulkanApplication::MainLoop()
 
 void BAV::VulkanApplication::DrawFrame()
 {
+    VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_CurrentFrame];
+    VkSemaphore imageAvailableSemaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
+    VkFence currentFence = m_InFlightFences[m_CurrentFrame];
+
     // Wait for fences
-    vkWaitForFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_LogicalDevice, 1, &currentFence, VK_TRUE, UINT64_MAX);
 
     // Reset fences
-    vkResetFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]);
+    vkResetFences(m_LogicalDevice, 1, &currentFence);
 
     uint32_t imageIndex{};
     vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
-        m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+        imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
+    VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
     // Timeout:
     //     if set to UINT64_MAX, it is disabled
 
 
     // Recording command buffer
-    vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
-    RecordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
+    vkResetCommandBuffer(currentCommandBuffer, 0);
+    RecordCommandBuffer(currentCommandBuffer, imageIndex);
 
 
     // Creation submit semaphores
-    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] =
     {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
 
-    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
+    if constexpr(g_bEnableBrokenSynchronization)
+    {
+        waitStages[0] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    }
+
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
 
     // Submit command buffer
     VkSubmitInfo submitInfo
@@ -372,14 +385,14 @@ void BAV::VulkanApplication::DrawFrame()
         .pWaitDstStageMask = waitStages,
 
         .commandBufferCount = 1,
-        .pCommandBuffers = &m_CommandBuffers[m_CurrentFrame],
+        .pCommandBuffers = &currentCommandBuffer,
 
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = signalSemaphores,
     };
 
 
-    VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]);
+    const VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, currentFence);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit draw command buffer"));
@@ -415,7 +428,6 @@ void BAV::VulkanApplication::CleanUp()
     {
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
-
     vmaDestroyAllocator(g_VmaAllocator);
 
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
@@ -670,9 +682,13 @@ void BAV::VulkanApplication::CreateSwapChain()
         .imageColorSpace = swapChainColorSpace,
         .imageExtent = extent,
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     };
 
+    if constexpr(g_bEnableBrokenSynchronization)
+    {
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
 
 
     // Image Sharing Mode:
@@ -828,6 +844,11 @@ void BAV::VulkanApplication::CreateRenderPass()
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     };
+
+    if constexpr(g_bEnableBrokenSynchronization)
+    {
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
 
     // Samples:
     // Refers to multisampling samples,
@@ -1329,6 +1350,40 @@ void BAV::VulkanApplication::CreateCommandPool()
 
 }
 
+void BAV::VulkanApplication::CreateVertexBuffer()
+{
+    VkBufferCreateInfo vertexBufferCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = g_Vertices.size() * sizeof(Vertex),
+        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+
+    VmaAllocationCreateInfo vertexBufferAllocInfo
+    {
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .preferredFlags = 0,
+    };
+
+    VmaAllocation vertexBufferAllocation{};
+
+    const VkResult result = vmaCreateBuffer(
+        g_VmaAllocator,
+        &vertexBufferCreateInfo,
+        &vertexBufferAllocInfo,
+        &m_VertexBuffer,
+        &vertexBufferAllocation,
+        nullptr);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create vertex buffer");
+    }
+}
+
 void BAV::VulkanApplication::CreateCommandBuffers()
 {
     m_CommandBuffers.resize(g_MaxFramesInFlight);
@@ -1363,7 +1418,9 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 void BAV::VulkanApplication::CreateSyncObjects()
 {
     m_ImageAvailableSemaphores.resize(g_MaxFramesInFlight);
-    m_RenderFinishedSemaphores.resize(g_MaxFramesInFlight);
+    // TODO
+    // m_RenderFinishedSemaphores.resize(g_MaxFramesInFlight);
+    m_RenderFinishedSemaphores.resize(m_SwapChainImages.size());
     m_InFlightFences.resize(g_MaxFramesInFlight);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo
@@ -1379,6 +1436,15 @@ void BAV::VulkanApplication::CreateSyncObjects()
 
     // signaled bit set on because otherwise the wait for fences
     // in DrawFrame will never be signaled
+    for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
+    {
+        VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+            &m_RenderFinishedSemaphores[i]);
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+        }
+    }
 
     // Create semaphores
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
@@ -1390,13 +1456,13 @@ void BAV::VulkanApplication::CreateSyncObjects()
             throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable, index: " + std::to_string(i)));
         }
 
-
-        result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-            &m_RenderFinishedSemaphores[i]);
-        if (result != VK_SUCCESS)
-        {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
-        }
+        // TODO: check if this is still needed, bc of Swapchain Semaphore Reuse
+        // result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+        //     &m_RenderFinishedSemaphores[i]);
+        // if (result != VK_SUCCESS)
+        // {
+        //     throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+        // }
 
 
         result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]);
@@ -1518,7 +1584,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
 
     // framebuffer uses swapchain images, and since swapchain's
     // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
-    VkViewport viewport
+    const VkViewport viewport
     {
         .x = 0.0f,
         .y = 0.f,
@@ -1528,7 +1594,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
         .maxDepth = 1.0f,
     };
 
-    VkRect2D scissor
+    const VkRect2D scissor
     {
         .offset = {0, 0},
         .extent = m_SwapChainExtent
@@ -1538,6 +1604,15 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
     // Set commands viewport & scissor
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+
+    // Bind buffer to pipeline
+    VkBuffer vertexBuffers[] = {m_VertexBuffer};
+    constexpr VkDeviceSize offsets[] = { 0 };
+
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
+    vkCmdDraw(commandBuffer, static_cast<uint32_t>(g_Vertices.size()), 1, 0, 0);
+
 
     // Set command draw
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
