@@ -1356,7 +1356,7 @@ void BAV::VulkanApplication::CreateVertexBuffer()
     {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = g_Vertices.size() * sizeof(Vertex),
-        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
@@ -1418,8 +1418,6 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 void BAV::VulkanApplication::CreateSyncObjects()
 {
     m_ImageAvailableSemaphores.resize(g_MaxFramesInFlight);
-    // TODO
-    // m_RenderFinishedSemaphores.resize(g_MaxFramesInFlight);
     m_RenderFinishedSemaphores.resize(m_SwapChainImages.size());
     m_InFlightFences.resize(g_MaxFramesInFlight);
 
