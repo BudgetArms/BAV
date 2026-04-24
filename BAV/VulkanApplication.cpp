@@ -1365,12 +1365,11 @@ void BAV::VulkanApplication::CreateVertexBuffer()
 
     constexpr VmaAllocationCreateInfo vertexBufferAllocInfo
     {
-        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         .preferredFlags = 0,
     };
-
 
     const VkResult result = vmaCreateBuffer(
         g_VmaAllocator,
@@ -1384,6 +1383,15 @@ void BAV::VulkanApplication::CreateVertexBuffer()
     {
         throw std::runtime_error("Failed to create vertex buffer");
     }
+
+    // Add vertices data
+    constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
+    void* data;
+    vmaMapMemory(g_VmaAllocator, m_VertexBufferAllocation, &data);
+    memcpy(data, g_Vertices.data(), bufferSize);
+    vmaUnmapMemory(g_VmaAllocator, m_VertexBufferAllocation);
+
+
 }
 
 void BAV::VulkanApplication::CreateCommandBuffers()
