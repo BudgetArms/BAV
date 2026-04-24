@@ -93,13 +93,25 @@ struct Vertex
 
 };
 
-constexpr std::array<Vertex, 3> g_Vertices =
+// constexpr std::array<Vertex, 3> g_Vertices =
+// {
+//     Vertex({ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+//     Vertex({ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}),
+//     Vertex({-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}),
+// };
+
+constexpr std::array<Vertex, 4> g_Vertices =
 {
-    Vertex({ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
-    Vertex({ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}),
-    Vertex({-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}),
+    Vertex({-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+    Vertex({0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}),
+    Vertex({0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+    Vertex({-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}),
 };
 
+constexpr std::array<uint16_t, 6> g_Indices
+{
+    0, 1, 2, 2, 3, 0
+};
 
 void BAV::VulkanApplication::Run()
 {
@@ -241,6 +253,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateFramebuffers();
     CreateCommandPool();
     CreateVertexBuffer();
+    CreateIndexBuffer();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -428,6 +441,7 @@ void BAV::VulkanApplication::CleanUp() const
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
+    vmaDestroyBuffer(g_VmaAllocator, m_IndexBuffer, m_IndexBufferAllocation);
     vmaDestroyAllocator(g_VmaAllocator);
 
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
@@ -1407,6 +1421,62 @@ void BAV::VulkanApplication::CreateVertexBuffer()
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
 }
 
+void BAV::VulkanApplication::CreateIndexBuffer()
+{
+    constexpr VkDeviceSize bufferSize = sizeof(uint16_t) * g_Indices.size();
+
+    constexpr VkBufferUsageFlags stagingBufferUsageFlags
+    {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    };
+
+    constexpr VmaMemoryUsage stagingBufferMemoryUsage
+    {
+        VMA_MEMORY_USAGE_AUTO
+    };
+
+    constexpr VmaAllocationCreateFlags stagingBufferAllocationCreateInfo
+    {
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    };
+
+    VkBuffer stagingBuffer{};
+    VmaAllocation stagingBufferAllocation{};
+
+    CreateBuffer(bufferSize, stagingBufferUsageFlags, stagingBufferMemoryUsage, stagingBufferAllocationCreateInfo,
+        stagingBufferAllocation, stagingBuffer);
+
+
+    // Add vertices data to staging buffer
+    vmaCopyMemoryToAllocation(g_VmaAllocator, g_Indices.data(), stagingBufferAllocation, 0, bufferSize);
+
+    constexpr VkBufferUsageFlags indexBufferUsageFlags
+    {
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+    };
+
+    constexpr VmaMemoryUsage indexBufferMemoryUsage
+    {
+        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+    };
+
+    constexpr VmaAllocationCreateFlags indexBufferAllocationCreateInfo
+    {
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    };
+
+    CreateBuffer(
+        bufferSize,
+        indexBufferUsageFlags,
+        indexBufferMemoryUsage,
+        indexBufferAllocationCreateInfo,
+        m_IndexBufferAllocation, m_IndexBuffer);
+
+    CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+
+    vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
+}
+
 void BAV::VulkanApplication::CreateCommandBuffers()
 {
     m_CommandBuffers.resize(g_MaxFramesInFlight);
@@ -1656,11 +1726,9 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     constexpr VkDeviceSize offsets[] = { 0 };
 
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
-    vkCmdDraw(commandBuffer, static_cast<uint32_t>(g_Vertices.size()), 1, 0, 0);
+    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-
-    // Set command draw
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_Indices.size()), 1, 0, 0, 0);
 
     // End render pass
     vkCmdEndRenderPass(commandBuffer);

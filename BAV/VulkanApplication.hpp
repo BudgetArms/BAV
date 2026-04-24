@@ -68,6 +68,7 @@ namespace BAV
         void CreateFramebuffers();
         void CreateCommandPool();
         void CreateVertexBuffer();
+        void CreateIndexBuffer();
         void CreateCommandBuffers();
         void CreateSyncObjects();
 
@@ -109,6 +110,8 @@ namespace BAV
 
         VkBuffer m_VertexBuffer{};
         VmaAllocation m_VertexBufferAllocation{};
+        VkBuffer m_IndexBuffer{};
+        VmaAllocation m_IndexBufferAllocation{};
 
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};
