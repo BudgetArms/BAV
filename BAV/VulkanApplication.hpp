@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <vk_mem_alloc.h>
 
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
@@ -106,6 +107,8 @@ namespace BAV
         VkCommandPool m_CommandPool{};
 
         VkBuffer m_VertexBuffer{};
+        VmaAllocation m_VertexBufferAllocation{};
+
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};
 

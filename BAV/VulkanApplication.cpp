@@ -428,6 +428,7 @@ void BAV::VulkanApplication::CleanUp()
     {
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
+    vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
     vmaDestroyAllocator(g_VmaAllocator);
 
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
@@ -1371,14 +1372,13 @@ void BAV::VulkanApplication::CreateVertexBuffer()
         .preferredFlags = 0,
     };
 
-    VmaAllocation vertexBufferAllocation{};
 
     const VkResult result = vmaCreateBuffer(
         g_VmaAllocator,
         &vertexBufferCreateInfo,
         &vertexBufferAllocInfo,
         &m_VertexBuffer,
-        &vertexBufferAllocation,
+        &m_VertexBufferAllocation,
         nullptr);
 
     if (result != VK_SUCCESS)
