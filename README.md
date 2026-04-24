@@ -9,3 +9,4 @@ However there are some differences, BAV uses [VMA](https://github.com/GPUOpen-Li
 - Add More Slang Shaders
 - Refactor Whole Codebase
 - Create The Sponza Scene
+- Do the transfer queue transfer family challenge
