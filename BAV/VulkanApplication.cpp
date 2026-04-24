@@ -50,7 +50,7 @@ struct Vertex
 
     static VkVertexInputBindingDescription GetBindingDescription()
     {
-        const VkVertexInputBindingDescription bindingDescription
+        constexpr VkVertexInputBindingDescription bindingDescription
         {
             .binding = 0,
             .stride = sizeof(Vertex),
@@ -93,13 +93,12 @@ struct Vertex
 
 };
 
-const std::vector<Vertex> g_Vertices =
+constexpr std::array<Vertex, 3> g_Vertices =
 {
-    {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+    Vertex({ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+    Vertex({ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}),
+    Vertex({-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}),
 };
-
 
 
 void BAV::VulkanApplication::Run()
@@ -339,8 +338,8 @@ void BAV::VulkanApplication::MainLoop()
 void BAV::VulkanApplication::DrawFrame()
 {
     VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_CurrentFrame];
-    VkSemaphore imageAvailableSemaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
-    VkFence currentFence = m_InFlightFences[m_CurrentFrame];
+    const VkSemaphore imageAvailableSemaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
+    const VkFence currentFence = m_InFlightFences[m_CurrentFrame];
 
     // Wait for fences
     vkWaitForFences(m_LogicalDevice, 1, &currentFence, VK_TRUE, UINT64_MAX);
@@ -352,7 +351,7 @@ void BAV::VulkanApplication::DrawFrame()
     vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
         imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
+    const VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
     // Timeout:
     //     if set to UINT64_MAX, it is disabled
 
@@ -377,7 +376,7 @@ void BAV::VulkanApplication::DrawFrame()
     VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
 
     // Submit command buffer
-    VkSubmitInfo submitInfo
+    const VkSubmitInfo submitInfo
     {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
@@ -422,7 +421,7 @@ void BAV::VulkanApplication::DrawFrame()
 
 }
 
-void BAV::VulkanApplication::CleanUp()
+void BAV::VulkanApplication::CleanUp() const
 {
     if (g_bEnableValidationLayers)
     {
@@ -626,7 +625,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
 
 }
 
-void BAV::VulkanApplication::CreateVulkanMemoryAllocator()
+void BAV::VulkanApplication::CreateVulkanMemoryAllocator() const
 {
     VmaAllocatorCreateInfo allocatorCreateInfo
     {
@@ -1312,7 +1311,7 @@ void BAV::VulkanApplication::CreateFramebuffers()
         };
 
 
-        VkResult result = vkCreateFramebuffer(m_LogicalDevice, &framebufferCreateInfo, nullptr,
+        const VkResult result = vkCreateFramebuffer(m_LogicalDevice, &framebufferCreateInfo, nullptr,
             &m_SwapChainFramebuffers[i]);
 
         if (result != VK_SUCCESS)
@@ -1356,7 +1355,7 @@ void BAV::VulkanApplication::CreateCommandPool()
 
 void BAV::VulkanApplication::CreateVertexBuffer()
 {
-    VkBufferCreateInfo vertexBufferCreateInfo
+    constexpr VkBufferCreateInfo vertexBufferCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = g_Vertices.size() * sizeof(Vertex),
@@ -1364,7 +1363,7 @@ void BAV::VulkanApplication::CreateVertexBuffer()
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
-    VmaAllocationCreateInfo vertexBufferAllocInfo
+    constexpr VmaAllocationCreateInfo vertexBufferAllocInfo
     {
         .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
@@ -1528,9 +1527,9 @@ void BAV::VulkanApplication::CleanUpSwapChain() const
 
 }
 
-void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex)
+void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandBuffer, const uint32_t imageIndex) const
 {
-    VkCommandBufferBeginInfo commandBufferBeginInfo
+    constexpr VkCommandBufferBeginInfo commandBufferBeginInfo
     {
         .sType =  VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,                     // optional
@@ -1608,7 +1607,6 @@ void BAV::VulkanApplication::RecordCommandBuffer(VkCommandBuffer& commandBuffer,
 
 
     // Bind buffer to pipeline
-    VkBuffer vertexBuffers[] = {m_VertexBuffer};
     constexpr VkDeviceSize offsets[] = { 0 };
 
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);

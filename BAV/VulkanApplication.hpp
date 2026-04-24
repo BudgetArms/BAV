@@ -54,13 +54,13 @@ namespace BAV
         void CreateInstance();
         void MainLoop();
         void DrawFrame();
-        void CleanUp();
+        void CleanUp() const;
 
         void SetupDebugMessenger();
         void CreateSurface();
         void PickPhysicalDevice();
         void CreateLocalDevice();
-        void CreateVulkanMemoryAllocator();
+        void CreateVulkanMemoryAllocator() const;
         void CreateSwapChain();
         void CreateImageViews();
         void CreateRenderPass();
@@ -77,7 +77,7 @@ namespace BAV
         void CleanUpSwapChain() const;
         // TODO: add the swap chain recreation functions related
         // to drawFrame & Frame buffers, when both are added in the future
-        void RecordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex);
+        void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;
 
 
 
@@ -90,8 +90,8 @@ namespace BAV
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        [[nodiscard]] VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        [[nodiscard]] static VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        [[nodiscard]] static VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
         [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
