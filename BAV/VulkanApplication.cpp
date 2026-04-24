@@ -433,17 +433,15 @@ void BAV::VulkanApplication::CleanUp() const
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
-
         vkDestroyFence(m_LogicalDevice, m_InFlightFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
-
-    for (const auto framebuffer : m_SwapChainFramebuffers)
+    for (const VkSemaphore semaphore : m_RenderFinishedSemaphores)
     {
-        vkDestroyFramebuffer(m_LogicalDevice, framebuffer, nullptr);
+        vkDestroySemaphore(m_LogicalDevice, semaphore, nullptr);
     }
+
+    vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 
     vkDestroyPipeline(m_LogicalDevice, m_GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
@@ -1357,31 +1355,56 @@ void BAV::VulkanApplication::CreateVertexBuffer()
 {
     constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
 
-    constexpr VkBufferUsageFlags bufferUsageFlags
+    constexpr VkBufferUsageFlags stagingBufferUsageFlags
+    {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    };
+
+    constexpr VmaMemoryUsage stagingBufferMemoryUsage
+    {
+        VMA_MEMORY_USAGE_AUTO
+    };
+
+    constexpr VmaAllocationCreateFlags stagingBufferAllocationCreateInfo
+    {
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    };
+
+    VkBuffer stagingBuffer{};
+    VmaAllocation stagingBufferAllocation{};
+
+    CreateBuffer(bufferSize, stagingBufferUsageFlags, stagingBufferMemoryUsage, stagingBufferAllocationCreateInfo,
+        stagingBufferAllocation, stagingBuffer);
+
+
+    // Add vertices data to staging buffer
+    vmaCopyMemoryToAllocation(g_VmaAllocator, g_Vertices.data(), stagingBufferAllocation, 0, bufferSize);
+
+    constexpr VkBufferUsageFlags vertexBufferUsageFlags
     {
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
     };
 
-    constexpr VmaMemoryUsage memoryUsage
+    constexpr VmaMemoryUsage vertexBufferMemoryUsage
     {
         VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
     };
 
-    constexpr VmaAllocationCreateFlags allocationCreateInfo
+    constexpr VmaAllocationCreateFlags vertexBufferAllocationCreateInfo
     {
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
     };
 
-
-    CreateBuffer(bufferSize, bufferUsageFlags, memoryUsage, allocationCreateInfo,
+    CreateBuffer(
+        bufferSize,
+        vertexBufferUsageFlags,
+        vertexBufferMemoryUsage,
+        vertexBufferAllocationCreateInfo,
         m_VertexBufferAllocation, m_VertexBuffer);
 
-    // Add vertices data
-    void* data;
-    vmaMapMemory(g_VmaAllocator, m_VertexBufferAllocation, &data);
-    memcpy(data, g_Vertices.data(), bufferSize);
-    vmaUnmapMemory(g_VmaAllocator, m_VertexBufferAllocation);
+    CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
 
+    vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
 }
 
 void BAV::VulkanApplication::CreateCommandBuffers()
@@ -1432,17 +1455,6 @@ void BAV::VulkanApplication::CreateSyncObjects()
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
-    // signaled bit set on because otherwise the wait for fences
-    // in DrawFrame will never be signaled
-    for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
-    {
-        VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-            &m_RenderFinishedSemaphores[i]);
-        if (result != VK_SUCCESS)
-        {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
-        }
-    }
 
     // Create semaphores
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
@@ -1454,21 +1466,24 @@ void BAV::VulkanApplication::CreateSyncObjects()
             throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable, index: " + std::to_string(i)));
         }
 
-        // TODO: check if this is still needed, bc of Swapchain Semaphore Reuse
-        // result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-        //     &m_RenderFinishedSemaphores[i]);
-        // if (result != VK_SUCCESS)
-        // {
-        //     throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
-        // }
-
-
         result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]);
         if (result != VK_SUCCESS)
         {
             throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create fence InFlight, index: " + std::to_string(i)));
         }
+    }
 
+
+    // signaled bit set on because otherwise the wait for fences
+    // in DrawFrame will never be signaled
+    for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
+    {
+        const VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
+            &m_RenderFinishedSemaphores[i]);
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+        }
     }
 
 }
@@ -1656,6 +1671,76 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" failed to record command buffer"));
     }
+
+}
+
+void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
+    const VkDeviceSize size) const
+{
+    const VkCommandBufferAllocateInfo cmdBufferAllocateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = m_CommandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+
+    VkCommandBuffer commandBuffer{};
+    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocateInfo, &commandBuffer);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to allocate command buffer"));
+    }
+
+    constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = nullptr,
+    };
+
+    result = vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to begin command buffer"));
+    }
+
+    const VkBufferCopy copyRegion
+    {
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size = size,
+    };
+
+    vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1, &copyRegion);
+
+    result = vkEndCommandBuffer(commandBuffer);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to end copy command buffer"));
+    }
+
+
+    const VkSubmitInfo submitInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+    };
+
+    result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to submit copy command buffer (graphics queue)"));
+    }
+
+    result = vkQueueWaitIdle(m_GraphicsQueue);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to wait for graphics queue after buffer copy"));
+    }
+
+    vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 
 }
 

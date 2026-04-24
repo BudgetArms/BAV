@@ -77,9 +77,8 @@ namespace BAV
 
         void RecreateSwapChain();
         void CleanUpSwapChain() const;
-        // TODO: add the swap chain recreation functions related
-        // to drawFrame & Frame buffers, when both are added in the future
         void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;
+        void CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer, const VkDeviceSize size) const;
 
 
 
