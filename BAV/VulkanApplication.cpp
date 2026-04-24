@@ -980,8 +980,11 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     }
     else
     {
-        const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
-        const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
+        const std::vector<char> vertShaderCode = ReadFile("Shaders/ColorTriangleVert.spv");
+        const std::vector<char> fragShaderCode = ReadFile("Shaders/ColorTriangleFrag.spv");
+
+        // const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
+        // const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
 
         // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderVert.spv");
         // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderFrag.spv");

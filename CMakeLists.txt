@@ -204,6 +204,19 @@ add_glsl_shader_target(
     SOURCE "RedTriangle.frag"
 )
 
+
+# Red Triangle Shaders
+
+add_glsl_shader_target(
+    ColorTriangleGLSLVertShader
+    SOURCE "ColorTriangle.vert"
+)
+add_glsl_shader_target(
+    ColorTriangleGLSLFragShader
+    SOURCE "ColorTriangle.frag"
+)
+
+
 add_dependencies(${PROJECT_NAME} SlangShader)
 add_dependencies(${PROJECT_NAME} GLSLVertShader)
 add_dependencies(${PROJECT_NAME} GLSLFragShader)
@@ -211,6 +224,9 @@ add_dependencies(${PROJECT_NAME} GLSLFragShader)
 add_dependencies(${PROJECT_NAME} RedTriangleSlangShader)
 add_dependencies(${PROJECT_NAME} RedTriangleGLSLVertShader)
 add_dependencies(${PROJECT_NAME} RedTriangleGLSLFragShader)
+
+add_dependencies(${PROJECT_NAME} ColorTriangleGLSLVertShader)
+add_dependencies(${PROJECT_NAME} ColorTriangleGLSLFragShader)
 
 
 
