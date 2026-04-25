@@ -85,21 +85,16 @@ find_program(GLSLANG_VALIDATOR "glslangValidator" HINTS $ENV{VULKAN_SDK}/bin REQ
 function(add_slang_shader_target TARGET)
 
     cmake_parse_arguments("SHADER" "" "" "SOURCE" ${ARGN})
-    set(SHADERS_DIR ${CMAKE_CURRENT_LIST_DIR}/Shaders)
+
+    set(SHADERS_DIR "${CMAKE_CURRENT_LIST_DIR}/Shaders")
+    set(OUTPUT_FILE "${SHADERS_DIR}/${TARGET}.spv")
+
     set(ENTRY_POINTS -entry VertexMain -entry FragmentMain)
-
-    add_custom_command(
-        OUTPUT ${SHADERS_DIR}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADERS_DIR}
-    )
-
-     # Get Shader source name (by removing .slang from shader source)
-    string(REPLACE ".slang" "" SHADER_NAME ${SHADER_SOURCE})
-    string(APPEND SHADER_NAME "Slang")
 
     # Compile Shaders
     add_custom_command(
-        OUTPUT ${SHADERS_DIR}/${SHADER_NAME}.spv
+        OUTPUT "${OUTPUT_FILE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADERS_DIR}
         COMMAND
             ${SLANGC_EXECUTABLE}
             ${SHADER_SOURCE}
@@ -107,17 +102,16 @@ function(add_slang_shader_target TARGET)
             -profile spirv_1_4
             -emit-spirv-directly
             -fvk-use-entrypoint-name ${ENTRY_POINTS}
-            -o ${SHADER_NAME}.spv
+            -o ${OUTPUT_FILE}
 
-        WORKING_DIRECTORY ${SHADERS_DIR}
-        DEPENDS ${SHADERS_DIR} ${SHADER_SOURCES}
+        DEPENDS "${SHADER_SOURCE}"
         COMMENT "Compiling Shader (Slang)"
         VERBATIM
     )
 
     add_custom_target(
         ${TARGET}
-        DEPENDS ${SHADERS_DIR}/${SHADER_NAME}.spv
+        DEPENDS "${OUTPUT_FILE}"
     )
 
 endfunction()
@@ -126,107 +120,81 @@ endfunction()
 function(add_glsl_shader_target TARGET)
 
     cmake_parse_arguments("SHADER" "" "" "SOURCE" ${ARGN})
-    set(SHADERS_DIR ${CMAKE_CURRENT_LIST_DIR}/Shaders)
 
-    add_custom_command(
-        OUTPUT ${SHADERS_DIR}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADERS_DIR}
-    )
-
-    if( ${SHADER_SOURCE} MATCHES ".frag")
-
-        string(REPLACE ".frag" "" SHADER_NAME ${SHADER_SOURCE})
-        string(APPEND SHADER_NAME "Frag")
-
-    elseif( ${SHADER_SOURCE} MATCHES ".vert")
-
-        string(REPLACE ".vert" "" SHADER_NAME ${SHADER_SOURCE})
-        string(APPEND SHADER_NAME "Vert")
-
-    else()
-
-        string(REPLACE "." "" SHADER_NAME ${SHADER_SOURCE})
-        string(APPEND SHADER_NAME "Idk")
-
-    endif()
+    set(SHADERS_DIR "${CMAKE_CURRENT_LIST_DIR}/Shaders")
+    set(OUTPUT_FILE "${SHADERS_DIR}/${TARGET}.spv")
 
     # Compile Shaders
     add_custom_command(
-        OUTPUT ${SHADERS_DIR}/${SHADER_NAME}.spv
+        OUTPUT "${OUTPUT_FILE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADERS_DIR}
         COMMAND
             glslangvalidator
             -V
             ${SHADER_SOURCE}
-            -o ${SHADER_NAME}.spv
+            -o ${OUTPUT_FILE}
 
-        WORKING_DIRECTORY ${SHADERS_DIR}
-        DEPENDS ${SHADERS_DIR} ${SHADER_SOURCES}
+        DEPENDS "${SHADER_SOURCE}"
         COMMENT "Compiling Shader (GLSL)"
         VERBATIM
     )
 
     add_custom_target(
         ${TARGET}
-        DEPENDS ${SHADERS_DIR}/${SHADER_NAME}.spv
+        DEPENDS "${OUTPUT_FILE}"
     )
 
 endfunction()
 
+# Macro for extracting Extension Name
+macro(ExtensionToPascalCase ExtensionResult Extension)
+    string(SUBSTRING "${Extension}" 1  1 FirstLetter)
+    string(SUBSTRING "${Extension}" 2 -1 RestOfLetters)
+
+    string(TOUPPER "${FirstLetter}" FirstLetter)
+
+    set(${ExtensionResult} "${FirstLetter}${RestOfLetters}")
+endmacro()
 
 
-# Shaders
-add_slang_shader_target(
-    SlangShader
-    SOURCE "Shader.slang"
+# Add Shaders
+file(GLOB SlangShaders "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.slang")
+
+foreach (SlangShader IN LISTS SlangShaders)
+    get_filename_component(SLANG_SHADER_NAME "${SlangShader}" NAME_WE)
+
+    get_filename_component(ShaderExtension "${SlangShader}" EXT)
+    ExtensionToPascalCase(ShaderExtension "${ShaderExtension}")
+    string(APPEND SLANG_SHADER_NAME "${ShaderExtension}")
+
+    add_slang_shader_target(
+            "${SLANG_SHADER_NAME}"
+            SOURCE "${SlangShader}"
+    )
+
+    add_dependencies(${PROJECT_NAME} "${SLANG_SHADER_NAME}")
+endforeach()
+
+
+file(GLOB GlslShaders
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
 )
 
-add_glsl_shader_target(
-    GLSLVertShader
-    SOURCE "Shader.vert"
-)
-add_glsl_shader_target(
-    GLSLFragShader
-    SOURCE "Shader.frag"
-)
+foreach (GlslShader IN LISTS GlslShaders)
+    get_filename_component(GLSL_SHADER_NAME "${GlslShader}" NAME_WE)
 
-# Red Triangle Shaders
-add_slang_shader_target(
-    RedTriangleSlangShader
-    SOURCE "RedTriangle.slang"
-)
+    get_filename_component(ShaderExtension "${GlslShader}" EXT)
+    ExtensionToPascalCase(ShaderExtension "${ShaderExtension}")
+    string(APPEND GLSL_SHADER_NAME "${ShaderExtension}")
 
-add_glsl_shader_target(
-    RedTriangleGLSLVertShader
-    SOURCE "RedTriangle.vert"
-)
-add_glsl_shader_target(
-    RedTriangleGLSLFragShader
-    SOURCE "RedTriangle.frag"
-)
+    add_glsl_shader_target(
+            "${GLSL_SHADER_NAME}"
+            SOURCE "${GlslShader}"
+    )
 
-
-# Red Triangle Shaders
-
-add_glsl_shader_target(
-    ColorTriangleGLSLVertShader
-    SOURCE "ColorTriangle.vert"
-)
-add_glsl_shader_target(
-    ColorTriangleGLSLFragShader
-    SOURCE "ColorTriangle.frag"
-)
-
-
-add_dependencies(${PROJECT_NAME} SlangShader)
-add_dependencies(${PROJECT_NAME} GLSLVertShader)
-add_dependencies(${PROJECT_NAME} GLSLFragShader)
-
-add_dependencies(${PROJECT_NAME} RedTriangleSlangShader)
-add_dependencies(${PROJECT_NAME} RedTriangleGLSLVertShader)
-add_dependencies(${PROJECT_NAME} RedTriangleGLSLFragShader)
-
-add_dependencies(${PROJECT_NAME} ColorTriangleGLSLVertShader)
-add_dependencies(${PROJECT_NAME} ColorTriangleGLSLFragShader)
+    add_dependencies(${PROJECT_NAME} "${GLSL_SHADER_NAME}")
+endforeach()
 
 
 
