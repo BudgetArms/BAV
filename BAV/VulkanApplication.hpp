@@ -64,11 +64,13 @@ namespace BAV
         void CreateSwapChain();
         void CreateImageViews();
         void CreateRenderPass();
+        void CreateDescriptionSetLayout();
         void CreateGraphicsPipeline();
         void CreateFramebuffers();
         void CreateCommandPool();
         void CreateVertexBuffer();
         void CreateIndexBuffer();
+        void CreateUniformBuffers();
         void CreateCommandBuffers();
         void CreateSyncObjects();
 
@@ -104,6 +106,7 @@ namespace BAV
         VkDevice m_LogicalDevice{ VK_NULL_HANDLE };
         VkSwapchainKHR m_SwapChain{};
         VkRenderPass m_RenderPass{};
+        VkDescriptorSetLayout m_DescriptorSetLayout{};
         VkPipelineLayout m_PipelineLayout{};
         VkPipeline m_GraphicsPipeline{};
         VkCommandPool m_CommandPool{};
@@ -113,6 +116,8 @@ namespace BAV
         VkBuffer m_IndexBuffer{};
         VmaAllocation m_IndexBufferAllocation{};
 
+        std::vector<VkBuffer> m_UniformBuffers{};
+        std::vector<VmaAllocation> m_UniformBuffersAllocations{};
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};
 

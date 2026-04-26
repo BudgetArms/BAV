@@ -45,8 +45,8 @@ VmaAllocator g_VmaAllocator = nullptr;
 
 struct Vertex
 {
-    glm::vec2 position;
-    glm::vec3 color;
+    glm::vec2 Position;
+    glm::vec3 Color;
 
     static VkVertexInputBindingDescription GetBindingDescription()
     {
@@ -76,14 +76,14 @@ struct Vertex
                 .location = 0,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(Vertex, position),
+                .offset = offsetof(Vertex, Position),
             },
             VkVertexInputAttributeDescription
             {
                 .location = 1,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(Vertex, color),
+                .offset = offsetof(Vertex, Color),
             }
 
         };
@@ -91,6 +91,13 @@ struct Vertex
         return inputAttributeDescriptions;
     }
 
+};
+
+struct UniformBufferObject
+{
+    glm::mat4 Model;
+    glm::mat4 View;
+    glm::mat4 Proj;
 };
 
 // constexpr std::array<Vertex, 3> g_Vertices =
@@ -249,11 +256,13 @@ void BAV::VulkanApplication::InitVulkan()
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
+    CreateDescriptionSetLayout();
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
     CreateVertexBuffer();
     CreateIndexBuffer();
+    CreateUniformBuffers();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -442,7 +451,6 @@ void BAV::VulkanApplication::CleanUp() const
     }
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
     vmaDestroyBuffer(g_VmaAllocator, m_IndexBuffer, m_IndexBufferAllocation);
-    vmaDestroyAllocator(g_VmaAllocator);
 
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
@@ -462,6 +470,15 @@ void BAV::VulkanApplication::CleanUp() const
     vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
 
     CleanUpSwapChain();
+
+    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    {
+        vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
+    }
+
+    vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
+
+    vmaDestroyAllocator(g_VmaAllocator);
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
 
@@ -958,6 +975,35 @@ void BAV::VulkanApplication::CreateRenderPass()
 
 }
 
+void BAV::VulkanApplication::CreateDescriptionSetLayout()
+{
+    constexpr VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding
+    {
+        .binding = 0,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .pImmutableSamplers = nullptr, // optional
+    };
+
+    const VkDescriptorSetLayoutCreateInfo uniformBufferObjectSetLayoutCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings = &uniformBufferObjectLayoutBinding,
+    };
+
+    const VkResult result = vkCreateDescriptorSetLayout(m_LogicalDevice, &uniformBufferObjectSetLayoutCreateInfo,
+        nullptr, &m_DescriptorSetLayout);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create uniform buffer object descriptor set layout"));
+    }
+
+
+
+}
+
 void BAV::VulkanApplication::CreateGraphicsPipeline()
 {
     // Shader Stage
@@ -1239,10 +1285,10 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     VkPipelineLayoutCreateInfo layoutCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 0,            // optional
-        .pSetLayouts = nullptr,         // optional
-        .pushConstantRangeCount = 0,    // optional
-        .pPushConstantRanges = nullptr, // optional
+        .setLayoutCount = 1,                    // optional (not anymore)
+        .pSetLayouts = &m_DescriptorSetLayout,  // optional (not anymore)
+        .pushConstantRangeCount = 0,            // optional
+        .pPushConstantRanges = nullptr,         // optional
     };
 
     VkResult result = vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_PipelineLayout);
@@ -1475,6 +1521,36 @@ void BAV::VulkanApplication::CreateIndexBuffer()
     CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
 
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
+}
+
+void BAV::VulkanApplication::CreateUniformBuffers()
+{
+    constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    m_UniformBuffers.resize(g_MaxFramesInFlight);
+    m_UniformBuffersAllocations.resize(g_MaxFramesInFlight);
+
+    constexpr VkBufferUsageFlags uniformBufferUsageFlags
+    {
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+    };
+
+    constexpr VmaMemoryUsage uniformBufferMemoryUsage
+    {
+        VMA_MEMORY_USAGE_AUTO
+    };
+
+    constexpr VmaAllocationCreateFlags UniformBufferAllocationCreateInfo
+    {
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    };
+
+    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    {
+        CreateBuffer(bufferSize, uniformBufferUsageFlags, uniformBufferMemoryUsage, UniformBufferAllocationCreateInfo,
+            m_UniformBuffersAllocations[i], m_UniformBuffers[i]);
+    }
+
 }
 
 void BAV::VulkanApplication::CreateCommandBuffers()
