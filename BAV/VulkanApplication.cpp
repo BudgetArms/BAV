@@ -72,7 +72,7 @@ struct Vertex
 
     static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 2> inputAttributeDescriptions
+        constexpr std::array<VkVertexInputAttributeDescription, 2> inputAttributeDescriptions
         {
             VkVertexInputAttributeDescription
             {
@@ -98,9 +98,9 @@ struct Vertex
 
 struct UniformBufferObject
 {
-    glm::mat4 Model;
-    glm::mat4 View;
-    glm::mat4 Proj;
+    glm::mat4 Model{};
+    glm::mat4 View{};
+    glm::mat4 Proj{};
 };
 
 // constexpr std::array<Vertex, 3> g_Vertices =
@@ -1033,7 +1033,8 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     if constexpr(g_UseSlangShaders)
     {
         const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangleSlang.spv");
-        // const std::vector<char> shaderCode = ReadFile("Shaders/ShaderSlang.spv");
+
+
         slangShaderModule = CreateShaderModule(shaderCode);
 
         vertexShaderCreateInfo.module = slangShaderModule;
@@ -1606,6 +1607,32 @@ void BAV::VulkanApplication::CreateDescriptorSets()
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate descriptor sets"));
     }
 
+
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    {
+        VkDescriptorBufferInfo bufferInfo
+        {
+            .buffer = m_UniformBuffers[i],
+            .offset = 0,
+            .range = sizeof(UniformBufferObject),
+        };
+
+        VkWriteDescriptorSet writeDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = m_DescriptorSets[i],
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pImageInfo = nullptr,          // optional
+            .pBufferInfo = &bufferInfo,
+            .pTexelBufferView = nullptr,    // optional
+        };
+
+        vkUpdateDescriptorSets(m_LogicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+    }
+
 }
 
 void BAV::VulkanApplication::CreateCommandBuffers()
@@ -1859,7 +1886,10 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_Indices.size()), 1, 0, 0, 0);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+        0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
+
+    vkCmdDrawIndexed(commandBuffer, g_Indices.size(), 1, 0, 0, 0);
 
     // End render pass
     vkCmdEndRenderPass(commandBuffer);
@@ -1943,7 +1973,7 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
 
 }
 
-void BAV::VulkanApplication::UpdateUniformBuffer(uint32_t currentImage) const
+void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) const
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -1955,9 +1985,9 @@ void BAV::VulkanApplication::UpdateUniformBuffer(uint32_t currentImage) const
 
     UniformBufferObject ubo
     {
-        .Model = glm::rotate(glm::mat4(1.0f), timePast * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, .0f)),
-        .Proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f)
+        .Model  = glm::rotate(glm::mat4(1.0f), timePast * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .View   = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .Proj   = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f)
     };
 
     ubo.Proj[1][1] *= -1;
