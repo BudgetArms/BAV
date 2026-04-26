@@ -1046,14 +1046,15 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     }
     else
     {
-        const std::vector<char> vertShaderCode = ReadFile("Shaders/ColorTriangleVert.spv");
-        const std::vector<char> fragShaderCode = ReadFile("Shaders/ColorTriangleFrag.spv");
 
         // const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
         // const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
 
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderFrag.spv");
+        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ColorTriangleVert.spv");
+        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ColorTriangleFrag.spv");
+
+        const std::vector<char> vertShaderCode = ReadFile("Shaders/Shader3DVert.spv");
+        const std::vector<char> fragShaderCode = ReadFile("Shaders/Shader3DFrag.spv");
 
         vertShaderModule = CreateShaderModule(vertShaderCode);
         fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -1137,7 +1138,7 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         .rasterizerDiscardEnable = VK_FALSE, // if enabled, rasterizer passes nothing to the framebuffer
         .polygonMode = VK_POLYGON_MODE_FILL,
         .cullMode = VK_CULL_MODE_BACK_BIT,
-        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,    // optional
         .depthBiasClamp = VK_FALSE,         // optional
@@ -1843,53 +1844,58 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     // Begin Render Pass:
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    // Subpasses content:
-    // VK_SUBPASS_CONTENTS_INLINE:
-    //     The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
-    // VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:
-    //     The render pass commands will be executed from secondary command buffers.
-
-
-    // Cmd begin pipeline
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
-
-
-    // Viewports and scissors
-
-    // framebuffer uses swapchain images, and since swapchain's
-    // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
-    const VkViewport viewport
+    // This is to indicate the beginning the render pass recording
     {
-        .x = 0.0f,
-        .y = 0.f,
-        .width =  static_cast<float>(m_SwapChainExtent.width),
-        .height =  static_cast<float>(m_SwapChainExtent.height),
-        .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
-        .maxDepth = 1.0f,
-    };
-
-    const VkRect2D scissor
-    {
-        .offset = {0, 0},
-        .extent = m_SwapChainExtent
-    };
+        // Subpasses content:
+        // VK_SUBPASS_CONTENTS_INLINE:
+        //     The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
+        // VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:
+        //     The render pass commands will be executed from secondary command buffers.
 
 
-    // Set commands viewport & scissor
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        // Cmd begin pipeline
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
 
-    // Bind buffer to pipeline
-    constexpr VkDeviceSize offsets[] = { 0 };
+        // Viewports and scissors
 
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        // framebuffer uses swapchain images, and since swapchain's
+        // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
+        const VkViewport viewport
+        {
+            .x = 0.0f,
+            .y = 0.f,
+            .width =  static_cast<float>(m_SwapChainExtent.width),
+            .height =  static_cast<float>(m_SwapChainExtent.height),
+            .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
+            .maxDepth = 1.0f,
+        };
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-        0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
+        const VkRect2D scissor
+        {
+            .offset = {0, 0},
+            .extent = m_SwapChainExtent
+        };
 
-    vkCmdDrawIndexed(commandBuffer, g_Indices.size(), 1, 0, 0, 0);
+
+        // Set commands viewport & scissor
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+
+        // Bind buffer to pipeline
+        constexpr VkDeviceSize offsets[] = { 0 };
+
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+            0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, g_Indices.size(), 1, 0, 0, 0);
+
+    }
+    // This is to indicate the end the render pass recording
 
     // End render pass
     vkCmdEndRenderPass(commandBuffer);
