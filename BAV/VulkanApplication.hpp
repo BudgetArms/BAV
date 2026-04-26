@@ -72,6 +72,7 @@ namespace BAV
         void CreateIndexBuffer();
         void CreateUniformBuffers();
         void CreateDescriptorPool();
+        void CreateDescriptorSets();
         void CreateCommandBuffers();
         void CreateSyncObjects();
 
@@ -123,6 +124,7 @@ namespace BAV
         std::vector<VmaAllocation> m_UniformBuffersAllocations{};
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};
+        std::vector<VkDescriptorSet> m_DescriptorSets{};
 
         // Fences & Semaphores
         std::vector<VkSemaphore> m_ImageAvailableSemaphores{};

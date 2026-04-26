@@ -267,6 +267,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateIndexBuffer();
     CreateUniformBuffers();
     CreateDescriptorPool();
+    CreateDescriptorSets();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -469,6 +470,7 @@ void BAV::VulkanApplication::CleanUp() const
     }
 
     vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 
     vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 
@@ -482,8 +484,6 @@ void BAV::VulkanApplication::CleanUp() const
     {
         vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
     }
-
-    vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 
     vmaDestroyAllocator(g_VmaAllocator);
 
@@ -1581,6 +1581,29 @@ void BAV::VulkanApplication::CreateDescriptorPool()
     if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create descriptor pool"));
+    }
+
+}
+
+void BAV::VulkanApplication::CreateDescriptorSets()
+{
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(g_MaxFramesInFlight, m_DescriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo desciporAllocateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = m_DescriptorPool,
+        .descriptorSetCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+        .pSetLayouts = descriptorSetLayouts.data(),
+    };
+
+
+    m_DescriptorSets.resize(g_MaxFramesInFlight);
+
+    const VkResult result = vkAllocateDescriptorSets(m_LogicalDevice, &desciporAllocateInfo, m_DescriptorSets.data());
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate descriptor sets"));
     }
 
 }
