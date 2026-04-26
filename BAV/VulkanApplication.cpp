@@ -266,6 +266,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateVertexBuffer();
     CreateIndexBuffer();
     CreateUniformBuffers();
+    CreateDescriptorPool();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -466,6 +467,8 @@ void BAV::VulkanApplication::CleanUp() const
     {
         vkDestroySemaphore(m_LogicalDevice, semaphore, nullptr);
     }
+
+    vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
 
     vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 
@@ -1553,6 +1556,31 @@ void BAV::VulkanApplication::CreateUniformBuffers()
     {
         CreateBuffer(bufferSize, uniformBufferUsageFlags, uniformBufferMemoryUsage, UniformBufferAllocationCreateInfo,
             m_UniformBuffersAllocations[i], m_UniformBuffers[i]);
+    }
+
+}
+
+void BAV::VulkanApplication::CreateDescriptorPool()
+{
+    VkDescriptorPoolSize descriptorPoolSize
+    {
+        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = static_cast<size_t>(g_MaxFramesInFlight),
+    };
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = static_cast<uint32_t>(g_MaxFramesInFlight),
+        .poolSizeCount = 1,
+        .pPoolSizes = &descriptorPoolSize,
+    };
+
+    const VkResult result = vkCreateDescriptorPool(m_LogicalDevice, &descriptorPoolCreateInfo, nullptr,
+        &m_DescriptorPool);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create descriptor pool"));
     }
 
 }

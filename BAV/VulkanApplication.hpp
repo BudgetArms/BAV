@@ -71,6 +71,7 @@ namespace BAV
         void CreateVertexBuffer();
         void CreateIndexBuffer();
         void CreateUniformBuffers();
+        void CreateDescriptorPool();
         void CreateCommandBuffers();
         void CreateSyncObjects();
 
@@ -111,6 +112,7 @@ namespace BAV
         VkPipelineLayout m_PipelineLayout{};
         VkPipeline m_GraphicsPipeline{};
         VkCommandPool m_CommandPool{};
+        VkDescriptorPool m_DescriptorPool{};
 
         VkBuffer m_VertexBuffer{};
         VmaAllocation m_VertexBufferAllocation{};
