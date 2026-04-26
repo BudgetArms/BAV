@@ -82,6 +82,7 @@ namespace BAV
         void CleanUpSwapChain() const;
         void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;
         void CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer, const VkDeviceSize size) const;
+        void UpdateUniformBuffer(uint32_t currentImage) const;
 
 
 

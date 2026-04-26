@@ -1,20 +1,23 @@
 #include "VulkanApplication.hpp"
 
-#include <iostream>
-#include <vector>
-#include <ranges>
 #include <algorithm>
-#include <stdexcept>
-#include <fstream>
-#include <set>
-#include <ios>
 #include <array>
+#include <chrono>
+#include <fstream>
+#include <ios>
+#include <iostream>
+#include <ranges>
+#include <set>
+#include <stdexcept>
+#include <vector>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vk_enum_string_helper.h>
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define VMA_IMPLEMENTATION
 #define VMA_STATS_STRING_ENABLED 1
@@ -382,6 +385,7 @@ void BAV::VulkanApplication::DrawFrame()
     vkResetCommandBuffer(currentCommandBuffer, 0);
     RecordCommandBuffer(currentCommandBuffer, imageIndex);
 
+    UpdateUniformBuffer(m_CurrentFrame);
 
     // Creation submit semaphores
     VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
@@ -1886,6 +1890,33 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
 
     vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 
+}
+
+void BAV::VulkanApplication::UpdateUniformBuffer(uint32_t currentImage) const
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    const auto currentTime = std::chrono::high_resolution_clock::now();
+    const float timePast = std::chrono::duration<float, std::chrono::seconds::period>
+        (currentTime - startTime).count();
+
+    const float aspectRatio = m_SwapChainExtent.width / static_cast<float>(m_SwapChainExtent.height);
+
+    UniformBufferObject ubo
+    {
+        .Model = glm::rotate(glm::mat4(1.0f), timePast * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, .0f)),
+        .Proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f)
+    };
+
+    ubo.Proj[1][1] *= -1;
+
+    vmaCopyMemoryToAllocation(
+        g_VmaAllocator,
+        &ubo,
+        m_UniformBuffersAllocations[currentImage],
+        0,
+        sizeof(UniformBufferObject));
 }
 
 
