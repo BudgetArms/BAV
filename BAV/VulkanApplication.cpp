@@ -457,10 +457,11 @@ void BAV::VulkanApplication::DrawFrame()
 
 void BAV::VulkanApplication::CleanUp() const
 {
-    if(g_bEnableValidationLayers)
+    if constexpr(g_bEnableValidationLayers)
     {
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
+
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
     vmaDestroyBuffer(g_VmaAllocator, m_IndexBuffer, m_IndexBufferAllocation);
 
@@ -470,7 +471,7 @@ void BAV::VulkanApplication::CleanUp() const
         vkDestroyFence(m_LogicalDevice, m_InFlightFences[i], nullptr);
     }
 
-    for(const VkSemaphore semaphore : m_RenderFinishedSemaphores)
+    for(const VkSemaphore& semaphore : m_RenderFinishedSemaphores)
     {
         vkDestroySemaphore(m_LogicalDevice, semaphore, nullptr);
     }
@@ -506,7 +507,7 @@ void BAV::VulkanApplication::CleanUp() const
 
 void BAV::VulkanApplication::SetupDebugMessenger()
 {
-    if(!g_bEnableValidationLayers)
+    if constexpr(!g_bEnableValidationLayers)
     {
         return;
     }
@@ -516,7 +517,6 @@ void BAV::VulkanApplication::SetupDebugMessenger()
 
     const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &debugUtilsMessenger, nullptr,
                                                                          &m_DebugMessenger);
-
     if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create debug messenger"));
@@ -624,7 +624,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
     const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(
         m_ValidationLayers);
 
-    if(g_bEnableValidationLayers)
+    if constexpr(g_bEnableValidationLayers)
     {
         createInfo.enabledLayerCount   = static_cast<uint32_t>(charValidationLayers.size());
         createInfo.ppEnabledLayerNames = charValidationLayers.data();
@@ -1840,12 +1840,12 @@ void BAV::VulkanApplication::RecreateSwapChain()
 
 void BAV::VulkanApplication::CleanUpSwapChain() const
 {
-    for(const auto frameBuffer : m_SwapChainFramebuffers)
+    for(const VkFramebuffer& frameBuffer : m_SwapChainFramebuffers)
     {
         vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
     }
 
-    for(const auto imageView : m_SwapChainImageViews)
+    for(const VkImageView& imageView : m_SwapChainImageViews)
     {
         vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
     }
@@ -2206,7 +2206,7 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if(g_bEnableValidationLayers)
+    if constexpr(g_bEnableValidationLayers)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
