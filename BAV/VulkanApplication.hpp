@@ -92,6 +92,8 @@ namespace BAV
         void CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer, const VkDeviceSize size) const;
         void UpdateUniformBuffer(uint32_t currentImage) const;
 
+        [[nodiscard]] VkCommandBuffer BeginSingleTimeCommands() const;
+        void EndSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
 
         [[nodiscard]] bool CheckValidationLayerSupport() const;

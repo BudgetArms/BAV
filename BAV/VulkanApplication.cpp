@@ -34,9 +34,9 @@
 
 
 #ifdef NDEBUG
-    constexpr bool g_bEnableValidationLayers = false;
+constexpr bool g_bEnableValidationLayers = false;
 #else
-    constexpr bool g_bEnableValidationLayers = true;
+constexpr bool g_bEnableValidationLayers = true;
 #endif
 
 #define FUNCTION_NAME __FUNCTION__
@@ -129,9 +129,9 @@ constexpr std::array<uint16_t, 6> g_Indices
 void BAV::VulkanApplication::Run()
 {
     #ifdef NDEBUG
-        std::cout << "RELEASE\n" << '\n';
+    std::cout << "RELEASE\n" << '\n';
     #else
-        std::cout << "DEBUG\n" << '\n';
+    std::cout << "DEBUG\n" << '\n';
     #endif
 
     if constexpr(g_UseSlangShaders)
@@ -1423,7 +1423,7 @@ void BAV::VulkanApplication::CreateVertexBuffer()
 
     constexpr VmaAllocationCreateInfo vertexBufferAllocationCreateInfo
     {
-        .flags =  VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
     };
 
@@ -1468,14 +1468,13 @@ void BAV::VulkanApplication::CreateTextureImage()
     textureData = nullptr;
 
 
-
     const VkImageCreateInfo imageCreateInfo
     {
-        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags         = 0,
-        .imageType     = VK_IMAGE_TYPE_2D,
-        .format        = VK_FORMAT_R8G8B8A8_SRGB,
-        .extent =
+        .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags     = 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format    = VK_FORMAT_R8G8B8A8_SRGB,
+        .extent    =
         {
             .width  = static_cast<uint32_t>(textureWidth),
             .height = static_cast<uint32_t>(textureHeight),
@@ -1801,7 +1800,7 @@ void BAV::VulkanApplication::CreateStagingBuffer(const VkDeviceSize bufferSize, 
 }
 
 void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInfo,
-    VmaAllocation& allocation, VkImage& image)
+                                         VmaAllocation& allocation, VkImage& image)
 {
     constexpr VmaAllocationCreateInfo allocationCreateInfo
     {
@@ -1884,10 +1883,10 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
 
     VkRenderPassBeginInfo renderPassBeginInfo
     {
-        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass      = m_RenderPass,
-        .framebuffer     = m_SwapChainFramebuffers[imageIndex],
-        .renderArea      =
+        .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass  = m_RenderPass,
+        .framebuffer = m_SwapChainFramebuffers[imageIndex],
+        .renderArea  =
         {
             .offset = { 0, 0 },
             .extent = m_SwapChainExtent
@@ -2057,6 +2056,47 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
         m_UniformBuffersAllocations[currentImage],
         0,
         sizeof(UniformBufferObject));
+}
+
+VkCommandBuffer BAV::VulkanApplication::BeginSingleTimeCommands() const
+{
+    const VkCommandBufferAllocateInfo cmdBufferAllocInfo
+    {
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool        = m_CommandPool,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+
+    VkCommandBuffer commandBuffer{};
+    vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocInfo, &commandBuffer);
+
+    constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+
+    vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
+
+    return commandBuffer;
+}
+
+void BAV::VulkanApplication::EndSingleTimeCommands(VkCommandBuffer commandBuffer) const
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    const VkSubmitInfo submitInfo
+    {
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers    = &commandBuffer,
+    };
+
+    vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_GraphicsQueue);
+
+    vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 }
 
 
