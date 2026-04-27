@@ -89,7 +89,12 @@ namespace BAV
         void CleanUpSwapChain() const;
         void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;
         void CopyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkDeviceSize size) const;
+        void CopyBufferToImage(VkBuffer sourceBuffer, VkImage image, uint32_t width, uint32_t height) const;
         void UpdateUniformBuffer(uint32_t currentImage) const;
+        void TransitionImageLayout(VkImage image,
+                                   VkPipelineStageFlags srcStageFlags, VkPipelineStageFlags dstStageFlags,
+                                   VkAccessFlags srcAccessFlags, VkAccessFlags dstAccessFlags,
+                                   VkImageLayout oldLayout, VkImageLayout newLayout) const;
 
         [[nodiscard]] VkCommandBuffer BeginSingleTimeCommands() const;
         void EndSingleTimeCommands(VkCommandBuffer commandBuffer) const;

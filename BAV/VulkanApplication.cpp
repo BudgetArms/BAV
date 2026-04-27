@@ -1503,6 +1503,24 @@ void BAV::VulkanApplication::CreateTextureImage()
 
     CreateImage(imageCreateInfo, imageAllocation, image);
 
+    TransitionImageLayout(image,
+                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          VK_ACCESS_NONE,
+                          VK_ACCESS_TRANSFER_READ_BIT,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    );
+
+    CopyBufferToImage(stagingBuffer, image,
+                      static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
+
+    TransitionImageLayout(image,
+                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
     vmaDestroyImage(g_VmaAllocator, image, imageAllocation);
 }
@@ -1965,33 +1983,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
 void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
                                         const VkDeviceSize size) const
 {
-    const VkCommandBufferAllocateInfo cmdBufferAllocateInfo
-    {
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = m_CommandPool,
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-
-    VkCommandBuffer commandBuffer{};
-    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocateInfo, &commandBuffer);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffer"));
-    }
-
-    constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
-    {
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = nullptr,
-    };
-
-    result = vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
-    }
+    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
     const VkBufferCopy copyRegion
     {
@@ -2002,33 +1994,50 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
 
     vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1, &copyRegion);
 
-    result = vkEndCommandBuffer(commandBuffer);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to end copy command buffer"));
-    }
+    EndSingleTimeCommands(commandBuffer);
+}
 
+void BAV::VulkanApplication::CopyBufferToImage(VkBuffer sourceBuffer, VkImage image,
+                                               uint32_t width, uint32_t height) const
+{
+    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
-    const VkSubmitInfo submitInfo
+    const VkBufferImageCopy copyRegion
     {
-        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers    = &commandBuffer,
+        .bufferOffset      = 0,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource  =
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = 0,
+            .baseArrayLayer = 0,
+            .layerCount     = 1,
+        },
+        .imageOffset =
+        {
+            .x = 0,
+            .y = 0,
+            .z = 0
+        },
+        .imageExtent =
+        {
+            .width  = width,
+            .height = height,
+            .depth  = 1,
+        },
     };
 
-    result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit copy command buffer (graphics queue)"));
-    }
+    vkCmdCopyBufferToImage(
+        commandBuffer,
+        sourceBuffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion
+    );
 
-    result = vkQueueWaitIdle(m_GraphicsQueue);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to wait for graphics queue after buffer copy"));
-    }
-
-    vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
+    EndSingleTimeCommands(commandBuffer);
 }
 
 void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) const
@@ -2058,6 +2067,47 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
         sizeof(UniformBufferObject));
 }
 
+void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
+                                                   const VkPipelineStageFlags srcStageFlags,
+                                                   const VkPipelineStageFlags dstStageFlags,
+                                                   const VkAccessFlags srcAccessFlags,
+                                                   const VkAccessFlags dstAccessFlags,
+                                                   const VkImageLayout oldLayout,
+                                                   const VkImageLayout newLayout) const
+{
+    const VkCommandBuffer commanddBuffer = BeginSingleTimeCommands();
+
+    const VkImageMemoryBarrier imageMemoryBarrier
+    {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask       = srcAccessFlags,
+        .dstAccessMask       = dstAccessFlags,
+        .oldLayout           = oldLayout,
+        .newLayout           = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = image,
+        .subresourceRange    =
+        {
+            .aspectMask     = 0, // TODO: fill later in
+            .baseMipLevel   = 0,
+            .levelCount     = 0,
+            .baseArrayLayer = 0,
+            .layerCount     = 1,
+        },
+    };
+
+    vkCmdPipelineBarrier(commanddBuffer,
+                         srcStageFlags,
+                         dstStageFlags,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &imageMemoryBarrier);
+
+    EndSingleTimeCommands(commanddBuffer);
+}
+
 VkCommandBuffer BAV::VulkanApplication::BeginSingleTimeCommands() const
 {
     const VkCommandBufferAllocateInfo cmdBufferAllocInfo
@@ -2069,7 +2119,13 @@ VkCommandBuffer BAV::VulkanApplication::BeginSingleTimeCommands() const
     };
 
     VkCommandBuffer commandBuffer{};
-    vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocInfo, &commandBuffer);
+
+    VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocInfo, &commandBuffer);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate (single time) command buffer"));
+    }
+
 
     constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
     {
@@ -2077,14 +2133,22 @@ VkCommandBuffer BAV::VulkanApplication::BeginSingleTimeCommands() const
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
-    vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
+    result = vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin (single time) command buffer"));
+    }
 
     return commandBuffer;
 }
 
 void BAV::VulkanApplication::EndSingleTimeCommands(VkCommandBuffer commandBuffer) const
 {
-    vkEndCommandBuffer(commandBuffer);
+    VkResult result = vkEndCommandBuffer(commandBuffer);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to end (single time) command buffer"));
+    }
 
     const VkSubmitInfo submitInfo
     {
@@ -2093,8 +2157,17 @@ void BAV::VulkanApplication::EndSingleTimeCommands(VkCommandBuffer commandBuffer
         .pCommandBuffers    = &commandBuffer,
     };
 
-    vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(m_GraphicsQueue);
+    result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit (single time) command buffer"));
+    }
+
+    result = vkQueueWaitIdle(m_GraphicsQueue);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to wait for the queue to complete"));
+    }
 
     vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 }
