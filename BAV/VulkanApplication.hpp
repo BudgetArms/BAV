@@ -22,7 +22,6 @@ namespace BAV
         {
             return GraphicsFamily.has_value() && PresentFamily.has_value();
         }
-
     };
 
     struct SwapChainSupportDetails
@@ -39,15 +38,14 @@ namespace BAV
 
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT             messageType,
+            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-            void*                                       pUserData
-            );
+            void* pUserData
+        );
 
     private:
         void InitWindow();
-
 
 
         void InitVulkan();
@@ -79,7 +77,8 @@ namespace BAV
 
         [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
         static void CreateBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags,
-            const VmaAllocationCreateInfo& allocationCreateInfo, VmaAllocation& allocation, VkBuffer& buffer);
+                                 const VmaAllocationCreateInfo& allocationCreateInfo, VmaAllocation& allocation,
+                                 VkBuffer& buffer);
 
         static void CreateStagingBuffer(VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer);
 
@@ -89,7 +88,7 @@ namespace BAV
         void RecreateSwapChain();
         void CleanUpSwapChain() const;
         void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;
-        void CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer, const VkDeviceSize size) const;
+        void CopyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkDeviceSize size) const;
         void UpdateUniformBuffer(uint32_t currentImage) const;
 
         [[nodiscard]] VkCommandBuffer BeginSingleTimeCommands() const;
@@ -105,8 +104,10 @@ namespace BAV
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
-        [[nodiscard]] static VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        [[nodiscard]] static VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        [[nodiscard]] static VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(
+            const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        [[nodiscard]] static VkPresentModeKHR ChooseSwapChainPresentMode(
+            const std::vector<VkPresentModeKHR>& availablePresentModes);
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
         [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
@@ -141,7 +142,7 @@ namespace BAV
 
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
-        VkSurfaceKHR m_Surface { nullptr };
+        VkSurfaceKHR m_Surface{ nullptr };
 
         // Queue
         VkQueue m_GraphicsQueue{ nullptr };
@@ -168,7 +169,7 @@ namespace BAV
         static constexpr VkColorSpaceKHR swapChainColorSpace{ VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 
         static constexpr VkPresentModeKHR swapChainPresentMode{ VK_PRESENT_MODE_MAILBOX_KHR };
-        static constexpr VkPresentModeKHR swapChainPresentModeDefault { VK_PRESENT_MODE_FIFO_KHR };
+        static constexpr VkPresentModeKHR swapChainPresentModeDefault{ VK_PRESENT_MODE_FIFO_KHR };
 
 
         const std::vector<std::string> m_ValidationLayers =
@@ -176,13 +177,11 @@ namespace BAV
             "VK_LAYER_KHRONOS_validation"
         };
 
-        const  std::vector<std::string> m_DeviceExtensions =
+        const std::vector<std::string> m_DeviceExtensions =
         {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
         };
-
-
     };
 }
 
