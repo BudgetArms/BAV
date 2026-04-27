@@ -492,6 +492,8 @@ void BAV::VulkanApplication::CleanUp() const
         vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
     }
 
+    vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
+
     vmaDestroyAllocator(g_VmaAllocator);
 
     vkDestroyDevice(m_LogicalDevice, nullptr);
@@ -1498,12 +1500,9 @@ void BAV::VulkanApplication::CreateTextureImage()
     // VK_IMAGE_LAYOUT_PREINITIALIZED: Not usable by the GPU, but the first transition will preserve the texels.
 
 
-    VkImage image{};
-    VmaAllocation imageAllocation{};
+    CreateImage(imageCreateInfo, m_ImageAllocation, m_Image);
 
-    CreateImage(imageCreateInfo, imageAllocation, image);
-
-    TransitionImageLayout(image,
+    TransitionImageLayout(m_Image,
                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_TRANSFER_BIT,
                           VK_ACCESS_NONE,
@@ -1512,17 +1511,16 @@ void BAV::VulkanApplication::CreateTextureImage()
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     );
 
-    CopyBufferToImage(stagingBuffer, image,
+    CopyBufferToImage(stagingBuffer, m_Image,
                       static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
 
-    TransitionImageLayout(image,
+    TransitionImageLayout(m_Image,
                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                           VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
 
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
-    vmaDestroyImage(g_VmaAllocator, image, imageAllocation);
 }
 
 void BAV::VulkanApplication::CreateIndexBuffer()

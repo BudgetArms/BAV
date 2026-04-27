@@ -137,6 +137,9 @@ namespace BAV
         std::vector<VkBuffer> m_UniformBuffers{};
         std::vector<VmaAllocation> m_UniformBuffersAllocations{};
 
+        VkImage m_Image{};
+        VmaAllocation m_ImageAllocation{};
+
         std::vector<VkCommandBuffer> m_CommandBuffers{};
         std::vector<VkDescriptorSet> m_DescriptorSets{};
 
@@ -147,11 +150,10 @@ namespace BAV
 
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
-        VkSurfaceKHR m_Surface{ nullptr };
-
-        // Queue
-        VkQueue m_GraphicsQueue{ nullptr };
-        VkQueue m_PresentQueue{ nullptr };
+        VkSurfaceKHR m_Surface{};
+  // Queue
+        VkQueue m_GraphicsQueue{};
+        VkQueue m_PresentQueue{};
 
 
         const int m_Width{ 800 };
