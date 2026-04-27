@@ -43,7 +43,7 @@
 
 constexpr bool g_bEnableBrokenSynchronization = false;
 
-constexpr bool g_UseSlangShaders = false;
+constexpr bool g_UseSlangShaders  = false;
 constexpr int g_MaxFramesInFlight = 2;
 
 
@@ -59,8 +59,8 @@ struct Vertex
     {
         constexpr VkVertexInputBindingDescription bindingDescription
         {
-            .binding = 0,
-            .stride = sizeof(Vertex),
+            .binding   = 0,
+            .stride    = sizeof(Vertex),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
         };
 
@@ -81,23 +81,22 @@ struct Vertex
             VkVertexInputAttributeDescription
             {
                 .location = 0,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(Vertex, Position),
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32_SFLOAT,
+                .offset   = offsetof(Vertex, Position),
             },
             VkVertexInputAttributeDescription
             {
                 .location = 1,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(Vertex, Color),
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset   = offsetof(Vertex, Color),
             }
 
         };
 
         return inputAttributeDescriptions;
     }
-
 };
 
 struct UniformBufferObject
@@ -116,10 +115,10 @@ struct UniformBufferObject
 
 constexpr std::array<Vertex, 4> g_Vertices =
 {
-    Vertex({-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}),
-    Vertex({0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}),
-    Vertex({0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
-    Vertex({-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}),
+    Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }),
+    Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }),
+    Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }),
+    Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
 };
 
 constexpr std::array<uint16_t, 6> g_Indices
@@ -129,11 +128,11 @@ constexpr std::array<uint16_t, 6> g_Indices
 
 void BAV::VulkanApplication::Run()
 {
-#ifdef NDEBUG
-    std::cout << "RELEASE\n" << '\n';
-#else
-    std::cout << "DEBUG\n" << '\n';
-#endif
+    #ifdef NDEBUG
+        std::cout << "RELEASE\n" << '\n';
+    #else
+        std::cout << "DEBUG\n" << '\n';
+    #endif
 
     if constexpr(g_UseSlangShaders)
     {
@@ -153,11 +152,11 @@ void BAV::VulkanApplication::Run()
 
 
 VkBool32 BAV::VulkanApplication::DebugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT             messageType,
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void*                                       pUserData
-    )
+    void* pUserData
+)
 {
     std::cerr << "Validation Layer: " << pCallbackData->pMessage << '\n';
 
@@ -229,7 +228,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
 
 void BAV::VulkanApplication::InitWindow()
 {
-    if (!glfwInit())
+    if(!glfwInit())
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to initialize GLFW"));
     }
@@ -267,6 +266,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
+    CreateTextureImage();
     CreateVertexBuffer();
     CreateIndexBuffer();
     CreateUniformBuffers();
@@ -278,39 +278,41 @@ void BAV::VulkanApplication::InitVulkan()
 
 void BAV::VulkanApplication::CreateInstance()
 {
-    if (g_bEnableValidationLayers && !CheckValidationLayerSupport())
+    if(g_bEnableValidationLayers && !CheckValidationLayerSupport())
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed! Validation layers are required, but not available"));
+        throw std::runtime_error(
+            FUNCTION_NAME + std::string(" Failed! Validation layers are required, but not available"));
     }
 
     VkApplicationInfo applicationInfo
     {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = m_Title.c_str(),
-        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),  // Developer Specified
-        .pEngineName = "What is an Engine",              // If you have an engine???
-        .engineVersion = VK_MAKE_VERSION(1, 0, 0),       // Don't have one
-        .apiVersion = VK_API_VERSION_1_4,                // The minimum Vulkan version that is required
+        .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName   = m_Title.c_str(),
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0), // Developer Specified
+        .pEngineName        = "What is an Engine",      // If you have an engine???
+        .engineVersion      = VK_MAKE_VERSION(1, 0, 0), // Don't have one
+        .apiVersion         = VK_API_VERSION_1_4,       // The minimum Vulkan version that is required
     };
 
     const std::vector<const char*> requiredExtensions = GetRequiredExtensions();
 
     VkInstanceCreateInfo instance
     {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &applicationInfo,
 
-        .enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
+        .enabledExtensionCount   = static_cast<uint32_t>(requiredExtensions.size()),
         .ppEnabledExtensionNames = requiredExtensions.data()
     };
 
     // outside the if-statement below, because of local scope
-    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
+    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(
+        m_ValidationLayers);
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (g_bEnableValidationLayers)
+    if(g_bEnableValidationLayers)
     {
-        instance.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
+        instance.enabledLayerCount   = static_cast<uint32_t>(charValidationLayers.size());
         instance.ppEnabledLayerNames = charValidationLayers.data();
 
         CreationHelper::PopulateDebugMessengerCreateInfo(debugCreateInfo);
@@ -320,7 +322,7 @@ void BAV::VulkanApplication::CreateInstance()
     {
         // If not debugging, don't add any validation layers
         instance.enabledLayerCount = 0;
-        instance.pNext = nullptr;
+        instance.pNext             = nullptr;
     }
 
 
@@ -345,11 +347,12 @@ void BAV::VulkanApplication::CreateInstance()
     // We don't have a custom allocator (for now/yet??)
     const VkResult result = vkCreateInstance(&instance, nullptr, &m_Instance);
 
-    if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+    if(result == VK_ERROR_EXTENSION_NOT_PRESENT)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create Vulkan Instance: extension not present"));
+        throw std::runtime_error(
+            FUNCTION_NAME + std::string(" Failed to create Vulkan Instance: extension not present"));
     }
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create Vulkan Instance"));
     }
@@ -357,7 +360,7 @@ void BAV::VulkanApplication::CreateInstance()
 
 void BAV::VulkanApplication::MainLoop()
 {
-    while (!glfwWindowShouldClose(m_Window))
+    while(!glfwWindowShouldClose(m_Window))
     {
         glfwPollEvents();
         DrawFrame();
@@ -368,9 +371,9 @@ void BAV::VulkanApplication::MainLoop()
 
 void BAV::VulkanApplication::DrawFrame()
 {
-    VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_CurrentFrame];
+    VkCommandBuffer currentCommandBuffer      = m_CommandBuffers[m_CurrentFrame];
     const VkSemaphore imageAvailableSemaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
-    const VkFence currentFence = m_InFlightFences[m_CurrentFrame];
+    const VkFence currentFence                = m_InFlightFences[m_CurrentFrame];
 
     // Wait for fences
     vkWaitForFences(m_LogicalDevice, 1, &currentFence, VK_TRUE, UINT64_MAX);
@@ -380,7 +383,7 @@ void BAV::VulkanApplication::DrawFrame()
 
     uint32_t imageIndex{};
     vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
-        imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+                          imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
     const VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
     // Timeout:
@@ -394,7 +397,7 @@ void BAV::VulkanApplication::DrawFrame()
     UpdateUniformBuffer(m_CurrentFrame);
 
     // Creation submit semaphores
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+    VkSemaphore waitSemaphores[]      = { imageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] =
     {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -410,21 +413,21 @@ void BAV::VulkanApplication::DrawFrame()
     // Submit command buffer
     const VkSubmitInfo submitInfo
     {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = waitSemaphores,
-        .pWaitDstStageMask = waitStages,
+        .pWaitSemaphores    = waitSemaphores,
+        .pWaitDstStageMask  = waitStages,
 
         .commandBufferCount = 1,
-        .pCommandBuffers = &currentCommandBuffer,
+        .pCommandBuffers    = &currentCommandBuffer,
 
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = signalSemaphores,
+        .pSignalSemaphores    = signalSemaphores,
     };
 
 
     const VkResult result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, currentFence);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit draw command buffer"));
     }
@@ -436,13 +439,13 @@ void BAV::VulkanApplication::DrawFrame()
 
     VkPresentInfoKHR presentInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = signalSemaphores,
-        .swapchainCount = 1,
-        .pSwapchains = swapchains,
-        .pImageIndices = &imageIndex,
-        .pResults = nullptr,    // optional
+        .pWaitSemaphores    = signalSemaphores,
+        .swapchainCount     = 1,
+        .pSwapchains        = swapchains,
+        .pImageIndices      = &imageIndex,
+        .pResults           = nullptr, // optional
     };
 
 
@@ -450,25 +453,24 @@ void BAV::VulkanApplication::DrawFrame()
 
     // increment frame
     m_CurrentFrame = (m_CurrentFrame + 1) % g_MaxFramesInFlight;
-
 }
 
 void BAV::VulkanApplication::CleanUp() const
 {
-    if (g_bEnableValidationLayers)
+    if(g_bEnableValidationLayers)
     {
         CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
     vmaDestroyBuffer(g_VmaAllocator, m_IndexBuffer, m_IndexBufferAllocation);
 
-    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         vkDestroySemaphore(m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
         vkDestroyFence(m_LogicalDevice, m_InFlightFences[i], nullptr);
     }
 
-    for (const VkSemaphore semaphore : m_RenderFinishedSemaphores)
+    for(const VkSemaphore semaphore : m_RenderFinishedSemaphores)
     {
         vkDestroySemaphore(m_LogicalDevice, semaphore, nullptr);
     }
@@ -484,7 +486,7 @@ void BAV::VulkanApplication::CleanUp() const
 
     CleanUpSwapChain();
 
-    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
     }
@@ -504,7 +506,7 @@ void BAV::VulkanApplication::CleanUp() const
 
 void BAV::VulkanApplication::SetupDebugMessenger()
 {
-    if (!g_bEnableValidationLayers)
+    if(!g_bEnableValidationLayers)
     {
         return;
     }
@@ -513,23 +515,21 @@ void BAV::VulkanApplication::SetupDebugMessenger()
     CreationHelper::PopulateDebugMessengerCreateInfo(debugUtilsMessenger);
 
     const VkResult result = CreationHelper::CreateDebugUtilsMessengerEXT(m_Instance, &debugUtilsMessenger, nullptr,
-        &m_DebugMessenger);
+                                                                         &m_DebugMessenger);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create debug messenger"));
     }
-
 }
 
 void BAV::VulkanApplication::CreateSurface()
 {
     const VkResult result = glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create surface"));
     }
-
 }
 
 void BAV::VulkanApplication::PickPhysicalDevice()
@@ -539,7 +539,7 @@ void BAV::VulkanApplication::PickPhysicalDevice()
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
 
-    if (deviceCount == 0)
+    if(deviceCount == 0)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find Physical devices"));
     }
@@ -547,26 +547,25 @@ void BAV::VulkanApplication::PickPhysicalDevice()
     std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, physicalDevices.data());
 
-    if (physicalDevices.empty())
+    if(physicalDevices.empty())
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find physical devices (GPU) in array"));
     }
 
     // Get suitable device
-    for (const auto& device : physicalDevices)
+    for(const auto& device : physicalDevices)
     {
-        if (IsDeviceSuitable(device))
+        if(IsDeviceSuitable(device))
         {
             m_PhysicalDevice = device;
             break;
         }
     }
 
-    if (m_PhysicalDevice == VK_NULL_HANDLE)
+    if(m_PhysicalDevice == VK_NULL_HANDLE)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find a suitable physical device (GPU)"));
     }
-
 }
 
 void BAV::VulkanApplication::CreateLocalDevice()
@@ -582,13 +581,13 @@ void BAV::VulkanApplication::CreateLocalDevice()
 
     constexpr float queuePriority = 1.f;
 
-    for (const auto& uniqueQueueFamilyIndex : uniqueQueueFamiliesIndex)
+    for(const auto& uniqueQueueFamilyIndex : uniqueQueueFamiliesIndex)
     {
         VkDeviceQueueCreateInfo queueCreateInfo
         {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .queueFamilyIndex = uniqueQueueFamilyIndex,
-            .queueCount = 1,
+            .queueCount       = 1,
             .pQueuePriorities = &queuePriority
         };
 
@@ -599,15 +598,16 @@ void BAV::VulkanApplication::CreateLocalDevice()
     // Device features to be used, for now empty (so everything VK_FALSE)
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-    const std::vector<const char*> charDeviceExtensions = ConversionHelpers::StringVectorToCharVector(m_DeviceExtensions);
+    const std::vector<const char*> charDeviceExtensions = ConversionHelpers::StringVectorToCharVector(
+        m_DeviceExtensions);
 
     VkDeviceCreateInfo createInfo
     {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
-        .pQueueCreateInfos = queueCreateInfos.data(),
+        .pQueueCreateInfos    = queueCreateInfos.data(),
 
-        .enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size()),
+        .enabledExtensionCount   = static_cast<uint32_t>(m_DeviceExtensions.size()),
         .ppEnabledExtensionNames = charDeviceExtensions.data(),
 
         .pEnabledFeatures = &deviceFeatures,
@@ -621,11 +621,12 @@ void BAV::VulkanApplication::CreateLocalDevice()
     // device as we did for the instance.
 
 
-    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(m_ValidationLayers);
+    const std::vector<const char*> charValidationLayers = ConversionHelpers::StringVectorToCharVector(
+        m_ValidationLayers);
 
-    if (g_bEnableValidationLayers)
+    if(g_bEnableValidationLayers)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(charValidationLayers.size());
+        createInfo.enabledLayerCount   = static_cast<uint32_t>(charValidationLayers.size());
         createInfo.ppEnabledLayerNames = charValidationLayers.data();
     }
     else
@@ -635,7 +636,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
 
 
     const VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create local device"));
     }
@@ -646,7 +647,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
     constexpr uint32_t queueIndex = 0;
 
 
-    if (GraphicsFamily.value() == PresentFamily.value())
+    if(GraphicsFamily.value() == PresentFamily.value())
     {
         vkGetDeviceQueue(m_LogicalDevice, GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
         m_PresentQueue = m_GraphicsQueue;
@@ -656,41 +657,37 @@ void BAV::VulkanApplication::CreateLocalDevice()
         vkGetDeviceQueue(m_LogicalDevice, GraphicsFamily.value(), queueIndex, &m_GraphicsQueue);
         vkGetDeviceQueue(m_LogicalDevice, PresentFamily.value(), queueIndex, &m_PresentQueue);
     }
-
 }
 
 void BAV::VulkanApplication::CreateVulkanMemoryAllocator() const
 {
     VmaAllocatorCreateInfo allocatorCreateInfo
     {
-        .flags = 0,
-        .physicalDevice = m_PhysicalDevice,
-        .device = m_LogicalDevice,
-        .preferredLargeHeapBlockSize = 0,   // will default to 256MiB
-        .pAllocationCallbacks = nullptr,
-        .pDeviceMemoryCallbacks = nullptr,
-        .pVulkanFunctions = nullptr,
-        .instance = m_Instance,
-        .vulkanApiVersion = VK_API_VERSION_1_4,
+        .flags                       = 0,
+        .physicalDevice              = m_PhysicalDevice,
+        .device                      = m_LogicalDevice,
+        .preferredLargeHeapBlockSize = 0, // will default to 256MiB
+        .pAllocationCallbacks        = nullptr,
+        .pDeviceMemoryCallbacks      = nullptr,
+        .pVulkanFunctions            = nullptr,
+        .instance                    = m_Instance,
+        .vulkanApiVersion            = VK_API_VERSION_1_4,
     };
 
     const VkResult result = vmaCreateAllocator(&allocatorCreateInfo, &g_VmaAllocator);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create VMA"));
     }
-
-
-
 }
 
 void BAV::VulkanApplication::CreateSwapChain()
 {
     const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice);
 
-    VkSurfaceFormatKHR surfaceFormat = ChooseSwapChainSurfaceFormat(swapChainSupport.Formats);
+    VkSurfaceFormatKHR surfaceFormat   = ChooseSwapChainSurfaceFormat(swapChainSupport.Formats);
     const VkPresentModeKHR presentMode = ChooseSwapChainPresentMode(swapChainSupport.PresentModes);
-    const VkExtent2D extent = ChooseSwapChainExtent(swapChainSupport.Capabilities);
+    const VkExtent2D extent            = ChooseSwapChainExtent(swapChainSupport.Capabilities);
 
     // minImageCount, is not recommended, bc driver sometimes has to do internal operations
     // minImageCount + 1, is more recommended, bc then we can write to the other image
@@ -708,15 +705,15 @@ void BAV::VulkanApplication::CreateSwapChain()
     // Create SwapChain
     VkSwapchainCreateInfoKHR createInfo
     {
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = m_Surface,
 
-        .minImageCount = imageCount,
-        .imageFormat = swapChainFormat,
-        .imageColorSpace = swapChainColorSpace,
-        .imageExtent = extent,
+        .minImageCount    = imageCount,
+        .imageFormat      = swapChainFormat,
+        .imageColorSpace  = swapChainColorSpace,
+        .imageExtent      = extent,
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     };
 
     if constexpr(g_bEnableBrokenSynchronization)
@@ -738,20 +735,20 @@ void BAV::VulkanApplication::CreateSwapChain()
     // without explicit ownership transfers.
 
 
-    const QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
-    const uint32_t queueFamilyIndices[] = {indices.GraphicsFamily.value(), indices.PresentFamily.value() };
+    const QueueFamilyIndices indices    = FindQueueFamilies(m_PhysicalDevice);
+    const uint32_t queueFamilyIndices[] = { indices.GraphicsFamily.value(), indices.PresentFamily.value() };
 
-    if (indices.GraphicsFamily.value() == indices.PresentFamily.value())
+    if(indices.GraphicsFamily.value() == indices.PresentFamily.value())
     {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0;   // optional
-        createInfo.pQueueFamilyIndices = nullptr;
+        createInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0; // optional
+        createInfo.pQueueFamilyIndices   = nullptr;
     }
     else
     {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+        createInfo.pQueueFamilyIndices   = queueFamilyIndices;
     }
 
 
@@ -788,7 +785,7 @@ void BAV::VulkanApplication::CreateSwapChain()
 
     VkResult result = vkCreateSwapchainKHR(m_LogicalDevice, &createInfo, nullptr, &m_SwapChain);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create swap chain"));
     }
@@ -797,7 +794,7 @@ void BAV::VulkanApplication::CreateSwapChain()
     // Get SwapChain Images
     result = vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, nullptr);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get swap chain images (count)"));
     }
@@ -806,22 +803,21 @@ void BAV::VulkanApplication::CreateSwapChain()
 
     result = vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, m_SwapChainImages.data());
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get swap chain images (vector)"));
     }
 
     // Set SwapChain variables
     m_SwapChainImageFormat = surfaceFormat.format;
-    m_SwapChainExtent = extent;
-
+    m_SwapChainExtent      = extent;
 }
 
 void BAV::VulkanApplication::CreateImageViews()
 {
     m_SwapChainImageViews.resize(m_SwapChainImages.size());
 
-    for (int i = 0; i < m_SwapChainImages.size(); ++i)
+    for(int i = 0; i < m_SwapChainImages.size(); ++i)
     {
         // The viewType parameter allows you to treat images as
         // 1D textures, 2D textures, 3D textures and cube maps.
@@ -832,7 +828,7 @@ void BAV::VulkanApplication::CreateImageViews()
             .image = m_SwapChainImages[i],
 
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = m_SwapChainImageFormat,
+            .format   = m_SwapChainImageFormat,
 
             // .components =  = VK_COMPONENT_SWIZZLE_IDENTITY,
             .components = VkComponentMapping
@@ -845,23 +841,21 @@ void BAV::VulkanApplication::CreateImageViews()
 
             .subresourceRange = VkImageSubresourceRange
             {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount = 1,
+                .layerCount     = 1,
             },
         };
 
         const VkResult result = vkCreateImageView(m_LogicalDevice, &createInfo, nullptr, &m_SwapChainImageViews[i]);
 
-        if (result != VK_SUCCESS)
+        if(result != VK_SUCCESS)
         {
             throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image view"));
         }
-
     }
-
 }
 
 void BAV::VulkanApplication::CreateRenderPass()
@@ -869,14 +863,14 @@ void BAV::VulkanApplication::CreateRenderPass()
     // Color attachment:
     VkAttachmentDescription colorAttachment
     {
-        .format = m_SwapChainImageFormat,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .format         = m_SwapChainImageFormat,
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     };
 
     if constexpr(g_bEnableBrokenSynchronization)
@@ -917,7 +911,7 @@ void BAV::VulkanApplication::CreateRenderPass()
     VkAttachmentReference colorAttachmentReference
     {
         .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     };
 
     // Attachment:
@@ -930,9 +924,9 @@ void BAV::VulkanApplication::CreateRenderPass()
     // Subpass:
     VkSubpassDescription subpass
     {
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .colorAttachmentCount = 1,
-        .pColorAttachments = &colorAttachmentReference,
+        .pColorAttachments    = &colorAttachmentReference,
     };
 
     // Bind point:
@@ -954,8 +948,8 @@ void BAV::VulkanApplication::CreateRenderPass()
         .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .srcAccessMask   = 0,
+        .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
     };
 
@@ -963,50 +957,47 @@ void BAV::VulkanApplication::CreateRenderPass()
     // Render pass:
     VkRenderPassCreateInfo renderPassCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = 1,
-        .pAttachments = &colorAttachment,
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
+        .pAttachments    = &colorAttachment,
+        .subpassCount    = 1,
+        .pSubpasses      = &subpass,
         .dependencyCount = 1,
-        .pDependencies = &dependency,
+        .pDependencies   = &dependency,
     };
 
     VkResult result = vkCreateRenderPass(m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create render pass"));
     }
-
 }
 
 void BAV::VulkanApplication::CreateDescriptionSetLayout()
 {
     constexpr VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding
     {
-        .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .binding            = 0,
+        .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount    = 1,
+        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
         .pImmutableSamplers = nullptr, // optional
     };
 
     const VkDescriptorSetLayoutCreateInfo uniformBufferObjectSetLayoutCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .bindingCount = 1,
-        .pBindings = &uniformBufferObjectLayoutBinding,
+        .pBindings    = &uniformBufferObjectLayoutBinding,
     };
 
     const VkResult result = vkCreateDescriptorSetLayout(m_LogicalDevice, &uniformBufferObjectSetLayoutCreateInfo,
-        nullptr, &m_DescriptorSetLayout);
-    if (result != VK_SUCCESS)
+                                                        nullptr, &m_DescriptorSetLayout);
+    if(result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create uniform buffer object descriptor set layout"));
+        throw std::runtime_error(
+            FUNCTION_NAME + std::string(" Failed to create uniform buffer object descriptor set layout"));
     }
-
-
-
 }
 
 void BAV::VulkanApplication::CreateGraphicsPipeline()
@@ -1036,15 +1027,13 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         slangShaderModule = CreateShaderModule(shaderCode);
 
         vertexShaderCreateInfo.module = slangShaderModule;
-        vertexShaderCreateInfo.pName = "VertexMain";
+        vertexShaderCreateInfo.pName  = "VertexMain";
 
         fragmentShaderCreateInfo.module = slangShaderModule;
-        fragmentShaderCreateInfo.pName = "FragmentMain";
-
+        fragmentShaderCreateInfo.pName  = "FragmentMain";
     }
     else
     {
-
         // const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
         // const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
 
@@ -1058,10 +1047,10 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         fragShaderModule = CreateShaderModule(fragShaderCode);
 
         vertexShaderCreateInfo.module = vertShaderModule;
-        vertexShaderCreateInfo.pName = "main";
+        vertexShaderCreateInfo.pName  = "main";
 
         fragmentShaderCreateInfo.module = fragShaderModule;
-        fragmentShaderCreateInfo.pName = "main";
+        fragmentShaderCreateInfo.pName  = "main";
     }
 
     VkPipelineShaderStageCreateInfo shaderStages[] =
@@ -1079,31 +1068,31 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
     VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-        .pDynamicStates = dynamicStates.data()
+        .pDynamicStates    = dynamicStates.data()
     };
 
     // SOA
-    const auto bindingDescription = Vertex::GetBindingDescription();
+    const auto bindingDescription    = Vertex::GetBindingDescription();
     const auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
     // Vertex Input
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount = 1,
-        .pVertexBindingDescriptions = &bindingDescription,
+        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount   = 1,
+        .pVertexBindingDescriptions      = &bindingDescription,
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-        .pVertexAttributeDescriptions = attributeDescriptions.data(),
+        .pVertexAttributeDescriptions    = attributeDescriptions.data(),
     };
 
 
     // Input Assembly
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .primitiveRestartEnable = VK_FALSE
     };
 
@@ -1111,9 +1100,9 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // they will be set/changed during "drawing time"
     VkPipelineViewportStateCreateInfo viewportCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .viewportCount = 1,
-        .scissorCount = 1
+        .scissorCount  = 1
 
     };
 
@@ -1131,17 +1120,17 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .depthClampEnable = VK_FALSE,
+        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable        = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE, // if enabled, rasterizer passes nothing to the framebuffer
-        .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VK_CULL_MODE_BACK_BIT,
-        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-        .depthBiasEnable = VK_FALSE,
-        .depthBiasConstantFactor = 0.0f,    // optional
-        .depthBiasClamp = VK_FALSE,         // optional
-        .depthBiasSlopeFactor = 0.0f,       // optional
-        .lineWidth = 1.f,
+        .polygonMode             = VK_POLYGON_MODE_FILL,
+        .cullMode                = VK_CULL_MODE_BACK_BIT,
+        .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .depthBiasEnable         = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f,     // optional
+        .depthBiasClamp          = VK_FALSE, // optional
+        .depthBiasSlopeFactor    = 0.0f,     // optional
+        .lineWidth               = 1.f,
     };
 
     // Depth Clamp:
@@ -1175,13 +1164,13 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
     VkPipelineMultisampleStateCreateInfo multisampleCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-        .sampleShadingEnable = VK_FALSE,
-        .minSampleShading = 1.0f,           // optional
-        .pSampleMask = nullptr,             // optional
-        .alphaToCoverageEnable = VK_FALSE,  // optional
-        .alphaToOneEnable = VK_FALSE,       // optional
+        .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
+        .sampleShadingEnable   = VK_FALSE,
+        .minSampleShading      = 1.0f,     // optional
+        .pSampleMask           = nullptr,  // optional
+        .alphaToCoverageEnable = VK_FALSE, // optional
+        .alphaToOneEnable      = VK_FALSE, // optional
     };
 
     // Will be discussed more detailed later on
@@ -1190,16 +1179,16 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // Depth Stencil:
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = VK_FALSE,
-        .depthWriteEnable = VK_FALSE,
-        .depthCompareOp = VK_COMPARE_OP_NEVER, // picked random compare operation
+        .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable       = VK_FALSE,
+        .depthWriteEnable      = VK_FALSE,
+        .depthCompareOp        = VK_COMPARE_OP_NEVER, // picked random compare operation
         .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE,
-        .front = {},                // optional
-        .back = {},                // optional
-        .minDepthBounds = 0.0f,     // optional
-        .maxDepthBounds = 1.0f,     // optional
+        .stencilTestEnable     = VK_FALSE,
+        .front                 = {},   // optional
+        .back                  = {},   // optional
+        .minDepthBounds        = 0.0f, // optional
+        .maxDepthBounds        = 1.0f, // optional
     };
 
     // Will be discussed more detailed later on
@@ -1213,15 +1202,15 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // Configuration per attached framebuffer
     VkPipelineColorBlendAttachmentState colorBlendAttachment
     {
-        .blendEnable = VK_FALSE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,     // optional
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,    // optional
-        .colorBlendOp = VK_BLEND_OP_ADD,                // optional
-        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,     // optional
-        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,    // optional
-        .alphaBlendOp = VK_BLEND_OP_ADD,                 // optional
-        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
-            | VK_COLOR_COMPONENT_A_BIT,
+        .blendEnable         = VK_FALSE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,  // optional
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO, // optional
+        .colorBlendOp        = VK_BLEND_OP_ADD,      // optional
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,  // optional
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO, // optional
+        .alphaBlendOp        = VK_BLEND_OP_ADD,      // optional
+        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
+        | VK_COLOR_COMPONENT_A_BIT,
     };
 
     // Color blending pseudocode example:
@@ -1263,12 +1252,12 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
     VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        .logicOpEnable = VK_FALSE,
-        .logicOp = VK_LOGIC_OP_COPY, // optional
+        .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .logicOpEnable   = VK_FALSE,
+        .logicOp         = VK_LOGIC_OP_COPY, // optional
         .attachmentCount = 1,
-        .pAttachments = &colorBlendAttachment,
-        .blendConstants =
+        .pAttachments    = &colorBlendAttachment,
+        .blendConstants  =
         {
             0.0f,
             0.0f,
@@ -1291,15 +1280,15 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // Pipeline layout
     VkPipelineLayoutCreateInfo layoutCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 1,                    // optional (not anymore)
-        .pSetLayouts = &m_DescriptorSetLayout,  // optional (not anymore)
-        .pushConstantRangeCount = 0,            // optional
-        .pPushConstantRanges = nullptr,         // optional
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount         = 1,                      // optional (not anymore)
+        .pSetLayouts            = &m_DescriptorSetLayout, // optional (not anymore)
+        .pushConstantRangeCount = 0,                      // optional
+        .pPushConstantRanges    = nullptr,                // optional
     };
 
     VkResult result = vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_PipelineLayout);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create pipeline layout"));
     }
@@ -1308,31 +1297,31 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // Graphics Pipeline:
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .sType      = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .stageCount = 2,
-        .pStages = shaderStages,
+        .pStages    = shaderStages,
 
-        .pVertexInputState      = &vertexInputCreateInfo,
-        .pInputAssemblyState    = &inputAssemblyCreateInfo,
-        .pViewportState         = &viewportCreateInfo,
-        .pRasterizationState    = &rasterizationCreateInfo,
-        .pMultisampleState      = &multisampleCreateInfo,
-        .pDepthStencilState     = &depthStencilCreateInfo,
-        .pColorBlendState       = &colorBlendCreateInfo,
-        .pDynamicState          = &dynamicStateCreateInfo,
+        .pVertexInputState   = &vertexInputCreateInfo,
+        .pInputAssemblyState = &inputAssemblyCreateInfo,
+        .pViewportState      = &viewportCreateInfo,
+        .pRasterizationState = &rasterizationCreateInfo,
+        .pMultisampleState   = &multisampleCreateInfo,
+        .pDepthStencilState  = &depthStencilCreateInfo,
+        .pColorBlendState    = &colorBlendCreateInfo,
+        .pDynamicState       = &dynamicStateCreateInfo,
 
         .layout     = m_PipelineLayout,
         .renderPass = m_RenderPass,
-        .subpass    = 0,    // index of subpass
+        .subpass    = 0, // index of subpass
 
-        .basePipelineHandle = VK_NULL_HANDLE,   // optional
-        .basePipelineIndex = -1,                // optional
+        .basePipelineHandle = VK_NULL_HANDLE, // optional
+        .basePipelineIndex  = -1,             // optional
     };
 
     result = vkCreateGraphicsPipelines(m_LogicalDevice,
-        VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr,
-        &m_GraphicsPipeline);
-    if (result != VK_SUCCESS)
+                                       VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr,
+                                       &m_GraphicsPipeline);
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create graphics pipeline"));
     }
@@ -1348,16 +1337,13 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         vkDestroyShaderModule(m_LogicalDevice, vertShaderModule, nullptr);
         vkDestroyShaderModule(m_LogicalDevice, fragShaderModule, nullptr);
     }
-
-
-
 }
 
 void BAV::VulkanApplication::CreateFramebuffers()
 {
     m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
 
-    for (size_t i = 0; i < m_SwapChainFramebuffers.size(); ++i)
+    for(size_t i = 0; i < m_SwapChainFramebuffers.size(); ++i)
     {
         VkImageView attachments[] =
         {
@@ -1366,28 +1352,26 @@ void BAV::VulkanApplication::CreateFramebuffers()
 
         VkFramebufferCreateInfo framebufferCreateInfo
         {
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .renderPass = m_RenderPass,
+            .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass      = m_RenderPass,
             .attachmentCount = 1,
-            .pAttachments = attachments,
-            .width = m_SwapChainExtent.width,
-            .height = m_SwapChainExtent.height,
-            .layers = 1,
+            .pAttachments    = attachments,
+            .width           = m_SwapChainExtent.width,
+            .height          = m_SwapChainExtent.height,
+            .layers          = 1,
         };
 
 
         const VkResult result = vkCreateFramebuffer(m_LogicalDevice, &framebufferCreateInfo, nullptr,
-            &m_SwapChainFramebuffers[i]);
+                                                    &m_SwapChainFramebuffers[i]);
 
-        if (result != VK_SUCCESS)
+        if(result != VK_SUCCESS)
         {
             throw std::runtime_error(FUNCTION_NAME +
                 std::string(" Failed to create framebuffer (index: " + std::to_string(i)
-                + ")"));
+                    + ")"));
         }
-
     }
-
 }
 
 void BAV::VulkanApplication::CreateCommandPool()
@@ -1396,8 +1380,8 @@ void BAV::VulkanApplication::CreateCommandPool()
 
     VkCommandPoolCreateInfo commandPoolCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
         .queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value(),
     };
 
@@ -1410,12 +1394,10 @@ void BAV::VulkanApplication::CreateCommandPool()
     //     without this flag they all have to be reset together
 
     VkResult result = vkCreateCommandPool(m_LogicalDevice, &commandPoolCreateInfo, nullptr, &m_CommandPool);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create command pool"));
     }
-
-
 }
 
 void BAV::VulkanApplication::CreateVertexBuffer()
@@ -1441,7 +1423,7 @@ void BAV::VulkanApplication::CreateVertexBuffer()
 
     constexpr VmaAllocationCreateInfo vertexBufferAllocationCreateInfo
     {
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .flags =  VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
     };
 
@@ -1579,7 +1561,7 @@ void BAV::VulkanApplication::CreateUniformBuffers()
         .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
-    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
         CreateBuffer(
@@ -1589,32 +1571,30 @@ void BAV::VulkanApplication::CreateUniformBuffers()
             m_UniformBuffersAllocations[i],
             m_UniformBuffers[i]);
     }
-
 }
 
 void BAV::VulkanApplication::CreateDescriptorPool()
 {
     constexpr VkDescriptorPoolSize descriptorPoolSize
     {
-        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = static_cast<size_t>(g_MaxFramesInFlight),
     };
 
     const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(g_MaxFramesInFlight),
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets       = static_cast<uint32_t>(g_MaxFramesInFlight),
         .poolSizeCount = 1,
-        .pPoolSizes = &descriptorPoolSize,
+        .pPoolSizes    = &descriptorPoolSize,
     };
 
     const VkResult result = vkCreateDescriptorPool(m_LogicalDevice, &descriptorPoolCreateInfo, nullptr,
-        &m_DescriptorPool);
+                                                   &m_DescriptorPool);
     if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create descriptor pool"));
     }
-
 }
 
 void BAV::VulkanApplication::CreateDescriptorSets()
@@ -1623,10 +1603,10 @@ void BAV::VulkanApplication::CreateDescriptorSets()
 
     const VkDescriptorSetAllocateInfo desciporAllocateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = m_DescriptorPool,
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = m_DescriptorPool,
         .descriptorSetCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-        .pSetLayouts = descriptorSetLayouts.data(),
+        .pSetLayouts        = descriptorSetLayouts.data(),
     };
 
 
@@ -1645,25 +1625,24 @@ void BAV::VulkanApplication::CreateDescriptorSets()
         {
             .buffer = m_UniformBuffers[i],
             .offset = 0,
-            .range = sizeof(UniformBufferObject),
+            .range  = sizeof(UniformBufferObject),
         };
 
         const VkWriteDescriptorSet writeDescriptorSet
         {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = m_DescriptorSets[i],
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pImageInfo = nullptr,          // optional
-            .pBufferInfo = &bufferInfo,
-            .pTexelBufferView = nullptr,    // optional
+            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet           = m_DescriptorSets[i],
+            .dstBinding       = 0,
+            .dstArrayElement  = 0,
+            .descriptorCount  = 1,
+            .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pImageInfo       = nullptr, // optional
+            .pBufferInfo      = &bufferInfo,
+            .pTexelBufferView = nullptr, // optional
         };
 
         vkUpdateDescriptorSets(m_LogicalDevice, 1, &writeDescriptorSet, 0, nullptr);
     }
-
 }
 
 void BAV::VulkanApplication::CreateCommandBuffers()
@@ -1672,9 +1651,9 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 
     const VkCommandBufferAllocateInfo commandBufferAllocateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = m_CommandPool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool        = m_CommandPool,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size()),
     };
 
@@ -1689,12 +1668,11 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 
 
     VkResult result = vkAllocateCommandBuffers(m_LogicalDevice,
-        &commandBufferAllocateInfo, m_CommandBuffers.data());
-    if (result != VK_SUCCESS)
+                                               &commandBufferAllocateInfo, m_CommandBuffers.data());
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffers"));
     }
-
 }
 
 void BAV::VulkanApplication::CreateSyncObjects()
@@ -1716,50 +1694,52 @@ void BAV::VulkanApplication::CreateSyncObjects()
 
 
     // Create semaphores
-    for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
         VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-            &m_ImageAvailableSemaphores[i]);
-        if (result != VK_SUCCESS)
+                                            &m_ImageAvailableSemaphores[i]);
+        if(result != VK_SUCCESS)
         {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable, index: " + std::to_string(i)));
+            throw std::runtime_error(
+                FUNCTION_NAME + std::string(" Failed to create semaphore ImageAvailable, index: " + std::to_string(i)));
         }
 
         result = vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]);
-        if (result != VK_SUCCESS)
+        if(result != VK_SUCCESS)
         {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create fence InFlight, index: " + std::to_string(i)));
+            throw std::runtime_error(
+                FUNCTION_NAME + std::string(" Failed to create fence InFlight, index: " + std::to_string(i)));
         }
     }
 
 
     // signaled bit set on because otherwise the wait for fences
     // in DrawFrame will never be signaled
-    for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
+    for(size_t i = 0; i < m_SwapChainImages.size(); ++i)
     {
         const VkResult result = vkCreateSemaphore(m_LogicalDevice, &semaphoreCreateInfo, nullptr,
-            &m_RenderFinishedSemaphores[i]);
-        if (result != VK_SUCCESS)
+                                                  &m_RenderFinishedSemaphores[i]);
+        if(result != VK_SUCCESS)
         {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+            throw std::runtime_error(
+                FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
         }
     }
-
 }
 
 VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char>& code) const
 {
     const VkShaderModuleCreateInfo shaderModuleCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = code.size() * sizeof(char),
-        .pCode = reinterpret_cast<const uint32_t*>(code.data())
+        .pCode    = reinterpret_cast<const uint32_t*>(code.data())
     };
 
     VkShaderModule shaderModule{};
     const VkResult result = vkCreateShaderModule(m_LogicalDevice, &shaderModuleCreateInfo, nullptr, &shaderModule);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create shader module"));
     }
@@ -1792,14 +1772,14 @@ void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize bufferSize, const V
         &allocation,
         nullptr);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create vertex buffer"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create buffer"));
     }
-
 }
 
-void BAV::VulkanApplication::CreateStagingBuffer(const VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer)
+void BAV::VulkanApplication::CreateStagingBuffer(const VkDeviceSize bufferSize, VmaAllocation& allocation,
+                                                 VkBuffer& buffer)
 {
     constexpr VkBufferUsageFlags stagingBufferUsageFlags
     {
@@ -1861,27 +1841,26 @@ void BAV::VulkanApplication::RecreateSwapChain()
 
 void BAV::VulkanApplication::CleanUpSwapChain() const
 {
-    for (const auto frameBuffer : m_SwapChainFramebuffers)
+    for(const auto frameBuffer : m_SwapChainFramebuffers)
     {
         vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
     }
 
-    for (const auto imageView : m_SwapChainImageViews)
+    for(const auto imageView : m_SwapChainImageViews)
     {
         vkDestroyImageView(m_LogicalDevice, imageView, nullptr);
     }
 
     vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
-
 }
 
 void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandBuffer, const uint32_t imageIndex) const
 {
     constexpr VkCommandBufferBeginInfo commandBufferBeginInfo
     {
-        .sType =  VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = 0,                     // optional
-        .pInheritanceInfo = nullptr,    // optional
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags            = 0,       // optional
+        .pInheritanceInfo = nullptr, // optional
     };
 
     // Flags:
@@ -1896,21 +1875,25 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
 
 
     VkResult result = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
     }
 
-    VkClearValue clearColor = {0.f, 0.f, 0.f, 1.f};
+    VkClearValue clearColor = { 0.f, 0.f, 0.f, 1.f };
 
     VkRenderPassBeginInfo renderPassBeginInfo
     {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = m_RenderPass,
-        .framebuffer = m_SwapChainFramebuffers[imageIndex],
-        .renderArea = { .offset = {0, 0}, .extent = m_SwapChainExtent },
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass      = m_RenderPass,
+        .framebuffer     = m_SwapChainFramebuffers[imageIndex],
+        .renderArea      =
+        {
+            .offset = { 0, 0 },
+            .extent = m_SwapChainExtent
+        },
         .clearValueCount = 1,
-        .pClearValues = &clearColor,
+        .pClearValues    = &clearColor,
     };
 
 
@@ -1936,17 +1919,17 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
         // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
         const VkViewport viewport
         {
-            .x = 0.0f,
-            .y = 0.f,
-            .width =  static_cast<float>(m_SwapChainExtent.width),
-            .height =  static_cast<float>(m_SwapChainExtent.height),
-            .minDepth = 0.0f,   // TODO: why can this be higher than maxDepth according to docs
+            .x        = 0.0f,
+            .y        = 0.f,
+            .width    = static_cast<float>(m_SwapChainExtent.width),
+            .height   = static_cast<float>(m_SwapChainExtent.height),
+            .minDepth = 0.0f, // TODO: why can this be higher than maxDepth according to docs
             .maxDepth = 1.0f,
         };
 
         const VkRect2D scissor
         {
-            .offset = {0, 0},
+            .offset = { 0, 0 },
             .extent = m_SwapChainExtent
         };
 
@@ -1963,10 +1946,9 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
         vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-            0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
+                                0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
 
         vkCmdDrawIndexed(commandBuffer, g_Indices.size(), 1, 0, 0, 0);
-
     }
     // This is to indicate the end the render pass recording
 
@@ -1975,40 +1957,39 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
 
     // End command buffer
     result = vkEndCommandBuffer(commandBuffer);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to record command buffer"));
     }
-
 }
 
 void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
-    const VkDeviceSize size) const
+                                        const VkDeviceSize size) const
 {
     const VkCommandBufferAllocateInfo cmdBufferAllocateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = m_CommandPool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool        = m_CommandPool,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };
 
     VkCommandBuffer commandBuffer{};
     VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocateInfo, &commandBuffer);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffer"));
     }
 
     constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
     {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
         .pInheritanceInfo = nullptr,
     };
 
     result = vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
     }
@@ -2017,13 +1998,13 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
     {
         .srcOffset = 0,
         .dstOffset = 0,
-        .size = size,
+        .size      = size,
     };
 
     vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1, &copyRegion);
 
     result = vkEndCommandBuffer(commandBuffer);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to end copy command buffer"));
     }
@@ -2031,25 +2012,24 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
 
     const VkSubmitInfo submitInfo
     {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
-        .pCommandBuffers = &commandBuffer,
+        .pCommandBuffers    = &commandBuffer,
     };
 
     result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit copy command buffer (graphics queue)"));
     }
 
     result = vkQueueWaitIdle(m_GraphicsQueue);
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to wait for graphics queue after buffer copy"));
     }
 
     vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
-
 }
 
 void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) const
@@ -2057,16 +2037,16 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     const auto currentTime = std::chrono::high_resolution_clock::now();
-    const float timePast = std::chrono::duration<float, std::chrono::seconds::period>
-        (currentTime - startTime).count();
+    const float timePast   = std::chrono::duration<float, std::chrono::seconds::period>
+            (currentTime - startTime).count();
 
     const float aspectRatio = m_SwapChainExtent.width / static_cast<float>(m_SwapChainExtent.height);
 
     UniformBufferObject ubo
     {
-        .Model  = glm::rotate(glm::mat4(1.0f), timePast * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .View   = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .Proj   = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f)
+        .Model = glm::rotate(glm::mat4(1.0f), timePast * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .View  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .Proj  = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f)
     };
 
     ubo.Proj[1][1] *= -1;
@@ -2083,9 +2063,9 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
 bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 {
     uint32_t layerCount = 0;
-    VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    VkResult result     = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the instance layer count"));
     }
@@ -2093,7 +2073,7 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
     std::vector<VkLayerProperties> availableLayers(layerCount);
     result = vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the instance layer properties"));
     }
@@ -2102,10 +2082,10 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
     // if all validations layers are available, then return true
     const bool foundAllLayers = std::ranges::all_of(m_ValidationLayers, [&](const std::string& validationLayer)
     {
-       return std::ranges::any_of(availableLayers, [&validationLayer](const VkLayerProperties& layerProperty)
-       {
+        return std::ranges::any_of(availableLayers, [&validationLayer](const VkLayerProperties& layerProperty)
+        {
             return validationLayer == layerProperty.layerName;
-       });
+        });
     });
 
     return foundAllLayers;
@@ -2121,18 +2101,18 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
 
     std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
 
-    for (const auto& [extensionName, specVersion] : availableExtensions)
+    for(const auto& [extensionName, specVersion] : availableExtensions)
     {
         requiredExtensions.erase(extensionName);
     }
 
     // if all the required extensions are supported, return true
-    if (requiredExtensions.empty())
+    if(requiredExtensions.empty())
     {
         return true;
     }
 
-    if (m_bPrintWarnings)
+    if(m_bPrintWarnings)
     {
         // Log info about the device & the missing required extension
         VkPhysicalDeviceProperties deviceProperties{};
@@ -2144,7 +2124,7 @@ bool BAV::VulkanApplication::DoesDeviceSupportRequiredExtensions(VkPhysicalDevic
         std::cout << "GPU type: " << string_VkPhysicalDeviceType(deviceProperties.deviceType) << '\n';
         std::cout << '\n';
         std::cout << "Required Device Extensions, that aren't supported by your GPU:" << '\n';
-        for (const std::string& requiredExtensionName : requiredExtensions)
+        for(const std::string& requiredExtensionName : requiredExtensions)
         {
             std::cout << '\t' << requiredExtensionName << '\n';
         }
@@ -2162,7 +2142,7 @@ bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device) const
     const bool areRequiredDeviceExtensionsSupported = DoesDeviceSupportRequiredExtensions(device);
 
     bool isSwapChainSuitable = false;
-    if (areRequiredDeviceExtensionsSupported)
+    if(areRequiredDeviceExtensionsSupported)
     {
         const SwapChainSupportDetails swapChainSupportDetails = QuerySwapChainSupport(device);
         isSwapChainSuitable = !swapChainSupportDetails.Formats.empty() && !swapChainSupportDetails.PresentModes.empty();
@@ -2178,7 +2158,7 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
     // Get Vulkan Extensions & ExtensionsCount
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    if (!glfwExtensions)
+    if(!glfwExtensions)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the required extensions"));
     }
@@ -2186,7 +2166,7 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (g_bEnableValidationLayers)
+    if(g_bEnableValidationLayers)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
@@ -2207,10 +2187,10 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
 
     // Get the right QueueFamily that has graphics_bit enabled
     int i = 0;
-    for (const auto& queueFamilyProperty : queueFamilyProperties)
+    for(const auto& queueFamilyProperty : queueFamilyProperties)
     {
         // Check for Graphic support
-        if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if(queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.GraphicsFamily = i;
         }
@@ -2218,12 +2198,12 @@ BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevi
         // Check for Present support
         VkBool32 hasPresentSupport = VK_FALSE;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, static_cast<uint32_t>(i), m_Surface, &hasPresentSupport);
-        if (hasPresentSupport)
+        if(hasPresentSupport)
         {
             indices.PresentFamily = i;
         }
 
-        if (indices.IsComplete())
+        if(indices.IsComplete())
         {
             break;
         }
@@ -2240,7 +2220,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.Capabilities);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface capabilities"));
     }
@@ -2248,9 +2228,9 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     // Get formats
     uint32_t formatCount = 0;
-    result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+    result               = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface formats (count)"));
     }
@@ -2259,7 +2239,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
     result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, formats.data());
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface formats (vector)"));
     }
@@ -2273,7 +2253,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
     uint32_t presentModesCount = 0;
     result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModesCount, nullptr);
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get present modes (count)"));
     }
@@ -2281,7 +2261,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
     std::vector<VkPresentModeKHR> presentModes(presentModesCount);
     result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModesCount, presentModes.data());
 
-    if (result != VK_SUCCESS)
+    if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get present modes (vector)"));
     }
@@ -2296,10 +2276,9 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 VkSurfaceFormatKHR BAV::VulkanApplication::ChooseSwapChainSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
-
-    for (const auto& format : availableFormats)
+    for(const auto& format : availableFormats)
     {
-        if (format.format == swapChainFormat
+        if(format.format == swapChainFormat
             && format.colorSpace == swapChainColorSpace)
         {
             return format;
@@ -2346,9 +2325,9 @@ VkPresentModeKHR BAV::VulkanApplication::ChooseSwapChainPresentMode(
     // PRESENT_MODE_MAILBOX: 'best' option
     // PRESENT_MODE_FIFO (always available): best for mobile bc energy efficient
 
-    for (const auto& presentMode : availablePresentModes)
+    for(const auto& presentMode : availablePresentModes)
     {
-        if (presentMode == swapChainPresentMode)
+        if(presentMode == swapChainPresentMode)
         {
             return presentMode;
         }
@@ -2394,7 +2373,7 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
 
 
     // if window manager sets correct with/height, return it, manually set it
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()
+    if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()
         && capabilities.currentExtent.height != std::numeric_limits<uint32_t>::max())
     {
         return capabilities.currentExtent;
@@ -2413,14 +2392,14 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
         };
 
         actualExtent.width
-         = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+                = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 
         actualExtent.height
-         = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+                = std::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                             capabilities.maxImageExtent.height);
 
         return actualExtent;
     }
-
 }
 
 std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
@@ -2428,9 +2407,9 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
     // ate: start reading from end of file
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-    if (!file.is_open())
+    if(!file.is_open())
     {
-        throw std::runtime_error( FUNCTION_NAME + std::string(" Failed to read the file"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read the file"));
     }
 
     // std::ifstream::tellg() returns the current position of the input pointer.
@@ -2447,7 +2426,7 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 
     file.close();
 
-    if (buffer.empty())
+    if(buffer.empty())
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read a file (buffer is empty)"));
     }
@@ -2457,4 +2436,3 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 
     return buffer;
 }
-
