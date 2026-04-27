@@ -4,17 +4,20 @@
 
 #include "VulkanApplication.hpp"
 
+#ifndef FUNCTION_NAME
+    #define FUNCTION_NAME __FUNCTION__
+#endif
+
 
 VkResult BAV::CreationHelper::CreateDebugUtilsMessengerEXT(
-    VkInstance instance,
+    const VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pDebugMessenger
     )
 {
 
-    // auto createDebugMessengerFunc = (PFN_vkCreateDebugUtilsMessengerEXT)
-    auto createDebugMessengerFunc = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+    const auto createDebugMessengerFunc = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 
     if (createDebugMessengerFunc == nullptr)
@@ -26,17 +29,17 @@ VkResult BAV::CreationHelper::CreateDebugUtilsMessengerEXT(
 }
 
 void BAV::CreationHelper::DestroyDebugUtilsMesengerEXT(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT debugMessenger,
+    const VkInstance instance,
+    const VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator
     )
 {
-    auto destroyDebugMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+    const auto destroyDebugMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
     if (!destroyDebugMessenger)
     {
-        throw std::runtime_error("Couldn't destroy Debug Messenger");
+        throw std::runtime_error(FUNCTION_NAME + std::string("Couldn't destroy Debug Messenger"));
     }
 
     destroyDebugMessenger(instance, debugMessenger, pAllocator);

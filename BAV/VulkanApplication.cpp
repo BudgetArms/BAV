@@ -231,7 +231,7 @@ void BAV::VulkanApplication::InitWindow()
 {
     if (!glfwInit())
     {
-        throw std::runtime_error("GLFW couldn't initialize");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to initialize GLFW"));
     }
 
     // Tells GLFW not to create an OpenGL Context
@@ -280,7 +280,7 @@ void BAV::VulkanApplication::CreateInstance()
 {
     if (g_bEnableValidationLayers && !CheckValidationLayerSupport())
     {
-        throw std::runtime_error("Validation layers are required, but not available");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed! Validation layers are required, but not available"));
     }
 
     VkApplicationInfo applicationInfo
@@ -347,11 +347,11 @@ void BAV::VulkanApplication::CreateInstance()
 
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
     {
-        throw std::runtime_error("Failed to create Vulkan Instance: extension not present");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create Vulkan Instance: extension not present"));
     }
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create Vulkan Instance");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create Vulkan Instance"));
     }
 }
 
@@ -517,14 +517,8 @@ void BAV::VulkanApplication::SetupDebugMessenger()
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Creation of debug messenger failed");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create debug messenger"));
     }
-
-    if (!m_DebugMessenger)
-    {
-        throw std::runtime_error("DebugMessenger is invalid");
-    }
-
 
 }
 
@@ -533,7 +527,7 @@ void BAV::VulkanApplication::CreateSurface()
     const VkResult result = glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create surface");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create surface"));
     }
 
 }
@@ -547,7 +541,7 @@ void BAV::VulkanApplication::PickPhysicalDevice()
 
     if (deviceCount == 0)
     {
-        throw std::runtime_error("No Physical devices are found");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find Physical devices"));
     }
 
     std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
@@ -555,7 +549,7 @@ void BAV::VulkanApplication::PickPhysicalDevice()
 
     if (physicalDevices.empty())
     {
-        throw std::runtime_error("No physical devices (GPU) in array found");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find physical devices (GPU) in array"));
     }
 
     // Get suitable device
@@ -570,7 +564,7 @@ void BAV::VulkanApplication::PickPhysicalDevice()
 
     if (m_PhysicalDevice == VK_NULL_HANDLE)
     {
-        throw std::runtime_error("Couldn't find a suitable physical device (GPU)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to find a suitable physical device (GPU)"));
     }
 
 }
@@ -643,7 +637,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
     const VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create local device");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create local device"));
     }
 
     // Get the device queue that is implicitely created and destroyed upon
@@ -796,7 +790,7 @@ void BAV::VulkanApplication::CreateSwapChain()
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create swap chain");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create swap chain"));
     }
 
 
@@ -805,7 +799,7 @@ void BAV::VulkanApplication::CreateSwapChain()
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get swap chain images (count)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get swap chain images (count)"));
     }
 
     m_SwapChainImages.resize(imageCount);
@@ -814,7 +808,7 @@ void BAV::VulkanApplication::CreateSwapChain()
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get swap chain images (vector)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get swap chain images (vector)"));
     }
 
     // Set SwapChain variables
@@ -863,7 +857,7 @@ void BAV::VulkanApplication::CreateImageViews()
 
         if (result != VK_SUCCESS)
         {
-            throw std::runtime_error("Failed to create image view");
+            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image view"));
         }
 
     }
@@ -1558,7 +1552,7 @@ void BAV::VulkanApplication::CreateDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts(g_MaxFramesInFlight, m_DescriptorSetLayout);
 
-    VkDescriptorSetAllocateInfo desciporAllocateInfo
+    const VkDescriptorSetAllocateInfo desciporAllocateInfo
     {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = m_DescriptorPool,
@@ -1578,14 +1572,14 @@ void BAV::VulkanApplication::CreateDescriptorSets()
 
     for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
-        VkDescriptorBufferInfo bufferInfo
+        const VkDescriptorBufferInfo bufferInfo
         {
             .buffer = m_UniformBuffers[i],
             .offset = 0,
             .range = sizeof(UniformBufferObject),
         };
 
-        VkWriteDescriptorSet writeDescriptorSet
+        const VkWriteDescriptorSet writeDescriptorSet
         {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = m_DescriptorSets[i],
@@ -1607,7 +1601,7 @@ void BAV::VulkanApplication::CreateCommandBuffers()
 {
     m_CommandBuffers.resize(g_MaxFramesInFlight);
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo
+    const VkCommandBufferAllocateInfo commandBufferAllocateInfo
     {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = m_CommandPool,
@@ -1726,7 +1720,7 @@ void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBuffe
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create vertex buffer");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create vertex buffer"));
     }
 
 }
@@ -1886,7 +1880,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to record command buffer"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to record command buffer"));
     }
 
 }
@@ -1906,7 +1900,7 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
     VkResult result = vkAllocateCommandBuffers(m_LogicalDevice, &cmdBufferAllocateInfo, &commandBuffer);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to allocate command buffer"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate command buffer"));
     }
 
     constexpr VkCommandBufferBeginInfo cmdBufferBeginInfo
@@ -1919,7 +1913,7 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
     result = vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to begin command buffer"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
     }
 
     const VkBufferCopy copyRegion
@@ -1934,7 +1928,7 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
     result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to end copy command buffer"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to end copy command buffer"));
     }
 
 
@@ -1948,13 +1942,13 @@ void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuf
     result = vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to submit copy command buffer (graphics queue)"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to submit copy command buffer (graphics queue)"));
     }
 
     result = vkQueueWaitIdle(m_GraphicsQueue);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" failed to wait for graphics queue after buffer copy"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to wait for graphics queue after buffer copy"));
     }
 
     vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
@@ -1996,7 +1990,7 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Couldn't get layer count"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the instance layer count"));
     }
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -2004,7 +1998,7 @@ bool BAV::VulkanApplication::CheckValidationLayerSupport() const
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string("Couldn't get layer properties"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the instance layer properties"));
     }
 
 
@@ -2089,13 +2083,9 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
 
     if (!glfwExtensions)
     {
-        throw std::runtime_error("No extensions found");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get the required extensions"));
     }
 
-    if (glfwExtensionCount == 0)
-    {
-        throw std::runtime_error("ExtensionCount is zero");
-    }
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
@@ -2155,7 +2145,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get surface capabilities");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface capabilities"));
     }
 
 
@@ -2165,26 +2155,18 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get surface formats (count)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface formats (count)"));
     }
 
-    if (formatCount == 0)
-    {
-        throw std::runtime_error("Format count is zero");
-    }
 
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
     result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, formats.data());
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get surface formats (vector)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get surface formats (vector)"));
     }
 
-    if (formats.empty())
-    {
-        throw std::runtime_error("Formats is empty");
-    }
 
     // Set formats
     details.Formats = formats;
@@ -2196,12 +2178,7 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get present modes (count)");
-    }
-
-    if (presentModesCount == 0)
-    {
-        throw std::runtime_error("Present Mode count is zero");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get present modes (count)"));
     }
 
     std::vector<VkPresentModeKHR> presentModes(presentModesCount);
@@ -2209,14 +2186,8 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
 
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to get present modes (vector)");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to get present modes (vector)"));
     }
-
-    if (presentModes.empty())
-    {
-        throw std::runtime_error("Present Modes is empty");
-    }
-
 
     // Set PresentModes
     details.PresentModes = presentModes;
@@ -2362,8 +2333,7 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 
     if (!file.is_open())
     {
-        std::string errorMessage = std::string(" File (") + filename + std::string(") not found or unable to open");
-        throw std::runtime_error( FUNCTION_NAME + errorMessage);
+        throw std::runtime_error( FUNCTION_NAME + std::string(" Failed to read the file"));
     }
 
     // std::ifstream::tellg() returns the current position of the input pointer.
@@ -2382,9 +2352,8 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 
     if (buffer.empty())
     {
-        throw std::runtime_error("Buffer is empty");
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read a file (buffer is empty)"));
     }
-
 
     // Close the file handle
     file.close();
