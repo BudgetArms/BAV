@@ -11,18 +11,22 @@
 #include <stdexcept>
 #include <vector>
 
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <vulkan/vk_enum_string_helper.h>
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #define VMA_IMPLEMENTATION
 #define VMA_STATS_STRING_ENABLED 1
 #define VMA_CPP20 1
 #include <vk_mem_alloc.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 
 #include "ConversionHelpers.hpp"

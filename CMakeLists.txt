@@ -25,7 +25,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glfw)
 
-
 # Add GLM
 FetchContent_Declare(
         glm
@@ -46,6 +45,19 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(vma)
 
+# Add stb (stb single-file public domain libraries, an image loader)
+FetchContent_Declare(
+        stb
+        GIT_REPOSITORY https://github.com/nothings/stb.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(stb)
+
+add_library(stb_lib INTERFACE)
+target_include_directories(stb_lib INTERFACE ${stb_SOURCE_DIR})
+
 
 add_executable(
         ${PROJECT_NAME}
@@ -65,6 +77,7 @@ target_link_libraries(
         glm
         Vulkan::Vulkan
         GPUOpen::VulkanMemoryAllocator
+        stb_lib
 )
 
 
