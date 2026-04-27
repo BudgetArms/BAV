@@ -1433,21 +1433,21 @@ void BAV::VulkanApplication::CreateVertexBuffer()
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     };
 
-    constexpr VmaMemoryUsage stagingBufferMemoryUsage
+    constexpr VmaAllocationCreateInfo stagingBufferAllocationCreateInfo
     {
-        VMA_MEMORY_USAGE_AUTO
-    };
-
-    constexpr VmaAllocationCreateFlags stagingBufferAllocationCreateInfo
-    {
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
     VkBuffer stagingBuffer{};
     VmaAllocation stagingBufferAllocation{};
 
-    CreateBuffer(bufferSize, stagingBufferUsageFlags, stagingBufferMemoryUsage, stagingBufferAllocationCreateInfo,
-        stagingBufferAllocation, stagingBuffer);
+    CreateBuffer(
+        bufferSize,
+        stagingBufferUsageFlags,
+        stagingBufferAllocationCreateInfo,
+        stagingBufferAllocation,
+        stagingBuffer);
 
 
     // Add vertices data to staging buffer
@@ -1458,22 +1458,18 @@ void BAV::VulkanApplication::CreateVertexBuffer()
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
     };
 
-    constexpr VmaMemoryUsage vertexBufferMemoryUsage
+    constexpr VmaAllocationCreateInfo vertexBufferAllocationCreateInfo
     {
-        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-    };
-
-    constexpr VmaAllocationCreateFlags vertexBufferAllocationCreateInfo
-    {
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
     };
 
     CreateBuffer(
         bufferSize,
         vertexBufferUsageFlags,
-        vertexBufferMemoryUsage,
         vertexBufferAllocationCreateInfo,
-        m_VertexBufferAllocation, m_VertexBuffer);
+        m_VertexBufferAllocation,
+        m_VertexBuffer);
 
     CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
 
@@ -1489,21 +1485,21 @@ void BAV::VulkanApplication::CreateIndexBuffer()
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     };
 
-    constexpr VmaMemoryUsage stagingBufferMemoryUsage
+    constexpr VmaAllocationCreateInfo stagingBufferAllocationCreateInfo
     {
-        VMA_MEMORY_USAGE_AUTO
-    };
-
-    constexpr VmaAllocationCreateFlags stagingBufferAllocationCreateInfo
-    {
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO
     };
 
     VkBuffer stagingBuffer{};
     VmaAllocation stagingBufferAllocation{};
 
-    CreateBuffer(bufferSize, stagingBufferUsageFlags, stagingBufferMemoryUsage, stagingBufferAllocationCreateInfo,
-        stagingBufferAllocation, stagingBuffer);
+    CreateBuffer(
+        bufferSize,
+        stagingBufferUsageFlags,
+        stagingBufferAllocationCreateInfo,
+        stagingBufferAllocation,
+        stagingBuffer);
 
 
     // Add vertices data to staging buffer
@@ -1514,20 +1510,15 @@ void BAV::VulkanApplication::CreateIndexBuffer()
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
     };
 
-    constexpr VmaMemoryUsage indexBufferMemoryUsage
+    constexpr VmaAllocationCreateInfo indexBufferAllocationCreateInfo
     {
-        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-    };
-
-    constexpr VmaAllocationCreateFlags indexBufferAllocationCreateInfo
-    {
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
     };
 
     CreateBuffer(
         bufferSize,
         indexBufferUsageFlags,
-        indexBufferMemoryUsage,
         indexBufferAllocationCreateInfo,
         m_IndexBufferAllocation, m_IndexBuffer);
 
@@ -1538,8 +1529,6 @@ void BAV::VulkanApplication::CreateIndexBuffer()
 
 void BAV::VulkanApplication::CreateUniformBuffers()
 {
-    constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
     m_UniformBuffers.resize(g_MaxFramesInFlight);
     m_UniformBuffersAllocations.resize(g_MaxFramesInFlight);
 
@@ -1548,33 +1537,34 @@ void BAV::VulkanApplication::CreateUniformBuffers()
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
     };
 
-    constexpr VmaMemoryUsage uniformBufferMemoryUsage
+    constexpr VmaAllocationCreateInfo uniformBufferAllocationCreateInfo
     {
-        VMA_MEMORY_USAGE_AUTO
-    };
-
-    constexpr VmaAllocationCreateFlags UniformBufferAllocationCreateInfo
-    {
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
     for (size_t i = 0; i < g_MaxFramesInFlight; ++i)
     {
-        CreateBuffer(bufferSize, uniformBufferUsageFlags, uniformBufferMemoryUsage, UniformBufferAllocationCreateInfo,
-            m_UniformBuffersAllocations[i], m_UniformBuffers[i]);
+        constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        CreateBuffer(
+            bufferSize,
+            uniformBufferUsageFlags,
+            uniformBufferAllocationCreateInfo,
+            m_UniformBuffersAllocations[i],
+            m_UniformBuffers[i]);
     }
 
 }
 
 void BAV::VulkanApplication::CreateDescriptorPool()
 {
-    VkDescriptorPoolSize descriptorPoolSize
+    constexpr VkDescriptorPoolSize descriptorPoolSize
     {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = static_cast<size_t>(g_MaxFramesInFlight),
     };
 
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo
+    const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .maxSets = static_cast<uint32_t>(g_MaxFramesInFlight),
@@ -1742,7 +1732,7 @@ VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char
 }
 
 void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usageFlags,
-    const VmaMemoryUsage memoryUsage, const VmaAllocationCreateFlags allocationFlags,
+    const VmaAllocationCreateInfo& allocationCreateInfo,
     VmaAllocation& allocation, VkBuffer& buffer)
 {
     const VkBufferCreateInfo bufferCreateInfo
@@ -1751,12 +1741,6 @@ void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBuffe
         .size = size,
         .usage = usageFlags,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
-
-    const VmaAllocationCreateInfo allocationCreateInfo
-    {
-        .flags = allocationFlags,
-        .usage = memoryUsage,
     };
 
     const VkResult result = vmaCreateBuffer(
