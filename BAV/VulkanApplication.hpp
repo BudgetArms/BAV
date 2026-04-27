@@ -80,6 +80,8 @@ namespace BAV
         static void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags,
             const VmaAllocationCreateInfo& allocationCreateInfo, VmaAllocation& allocation, VkBuffer& buffer);
 
+        static void CreateStagingBuffer(VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer);
+
         void RecreateSwapChain();
         void CleanUpSwapChain() const;
         void RecordCommandBuffer(const VkCommandBuffer& commandBuffer, uint32_t imageIndex) const;

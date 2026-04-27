@@ -1428,27 +1428,14 @@ void BAV::VulkanApplication::CreateVertexBuffer()
 {
     constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
 
-    constexpr VkBufferUsageFlags stagingBufferUsageFlags
-    {
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    };
-
-    constexpr VmaAllocationCreateInfo stagingBufferAllocationCreateInfo
-    {
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        .usage = VMA_MEMORY_USAGE_AUTO,
-    };
 
     VkBuffer stagingBuffer{};
     VmaAllocation stagingBufferAllocation{};
 
-    CreateBuffer(
+    CreateStagingBuffer(
         bufferSize,
-        stagingBufferUsageFlags,
-        stagingBufferAllocationCreateInfo,
         stagingBufferAllocation,
         stagingBuffer);
-
 
     // Add vertices data to staging buffer
     vmaCopyMemoryToAllocation(g_VmaAllocator, g_Vertices.data(), stagingBufferAllocation, 0, bufferSize);
@@ -1480,27 +1467,13 @@ void BAV::VulkanApplication::CreateIndexBuffer()
 {
     constexpr VkDeviceSize bufferSize = sizeof(uint16_t) * g_Indices.size();
 
-    constexpr VkBufferUsageFlags stagingBufferUsageFlags
-    {
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    };
-
-    constexpr VmaAllocationCreateInfo stagingBufferAllocationCreateInfo
-    {
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        .usage = VMA_MEMORY_USAGE_AUTO
-    };
-
     VkBuffer stagingBuffer{};
     VmaAllocation stagingBufferAllocation{};
 
-    CreateBuffer(
+    CreateStagingBuffer(
         bufferSize,
-        stagingBufferUsageFlags,
-        stagingBufferAllocationCreateInfo,
         stagingBufferAllocation,
         stagingBuffer);
-
 
     // Add vertices data to staging buffer
     vmaCopyMemoryToAllocation(g_VmaAllocator, g_Indices.data(), stagingBufferAllocation, 0, bufferSize);
@@ -1756,6 +1729,27 @@ void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBuffe
         throw std::runtime_error("Failed to create vertex buffer");
     }
 
+}
+
+void BAV::VulkanApplication::CreateStagingBuffer(const VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer)
+{
+    constexpr VkBufferUsageFlags stagingBufferUsageFlags
+    {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    };
+
+    constexpr VmaAllocationCreateInfo stagingBufferAllocationCreateInfo
+    {
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO,
+    };
+
+    CreateBuffer(
+        bufferSize,
+        stagingBufferUsageFlags,
+        stagingBufferAllocationCreateInfo,
+        allocation,
+        buffer);
 }
 
 void BAV::VulkanApplication::RecreateSwapChain()
