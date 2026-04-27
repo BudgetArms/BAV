@@ -77,7 +77,7 @@ namespace BAV
         void CreateSyncObjects();
 
         [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
-        static void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags,
+        static void CreateBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags,
             const VmaAllocationCreateInfo& allocationCreateInfo, VmaAllocation& allocation, VkBuffer& buffer);
 
         static void CreateStagingBuffer(VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer);

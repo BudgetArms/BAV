@@ -1457,6 +1457,90 @@ void BAV::VulkanApplication::CreateVertexBuffer()
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
 }
 
+void BAV::VulkanApplication::CreateTextureImage()
+{
+    int textureWidth{};
+    int textureHeight{};
+    int textureChannels{};
+    stbi_uc* textureData = stbi_load("Textures/ExampleTexture.jpg", &textureWidth, &textureHeight,
+                                     &textureChannels, STBI_rgb_alpha);
+    if(!textureData)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to load texture!"));
+    }
+
+    std::cout << "Texture Channel amount: " << textureChannels << '\n';
+    const VkDeviceSize imageSize = textureWidth * textureHeight * 4;
+
+    VkBuffer stagingBuffer{};
+    VmaAllocation stagingBufferAllocation{};
+
+    CreateStagingBuffer(
+        imageSize,
+        stagingBufferAllocation,
+        stagingBuffer);
+
+    vmaCopyMemoryToAllocation(g_VmaAllocator, textureData, stagingBufferAllocation, 0, imageSize);
+
+    stbi_image_free(textureData);
+    textureData = nullptr;
+
+
+
+    const VkImageCreateInfo imageCreateInfo
+    {
+        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags         = 0,
+        .imageType     = VK_IMAGE_TYPE_2D,
+        .format        = VK_FORMAT_R8G8B8A8_SRGB,
+        .extent =
+        {
+            .width  = static_cast<uint32_t>(textureWidth),
+            .height = static_cast<uint32_t>(textureHeight),
+            .depth  = 1,
+        },
+        .mipLevels     = 1,
+        .arrayLayers   = 1,
+        .samples       = VK_SAMPLE_COUNT_1_BIT,
+        .tiling        = VK_IMAGE_TILING_OPTIMAL,
+        .usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    // VkImageTiling:
+    // VK_IMAGE_TILING_LINEAR: Texels are laid out in row-major order like our pixels array
+    // VK_IMAGE_TILING_OPTIMAL: Texels are laid out in an implementation defined order for optimal access
+
+    // VkImageLayout:
+    // VK_IMAGE_LAYOUT_UNDEFINED: Not usable by the GPU and the very first transition will discard the texels.
+    // VK_IMAGE_LAYOUT_PREINITIALIZED: Not usable by the GPU, but the first transition will preserve the texels.
+
+    constexpr VmaAllocationCreateInfo allocationCreateInfo
+    {
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+    };
+
+    VkImage textureImage{};
+    VmaAllocation textureImageAllocation{};
+
+    const VkResult result = vmaCreateImage(
+        g_VmaAllocator,
+        &imageCreateInfo,
+        &allocationCreateInfo,
+        &textureImage,
+        &textureImageAllocation,
+        nullptr);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image!"));
+    }
+
+    vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
+    vmaDestroyImage(g_VmaAllocator, textureImage, textureImageAllocation);
+}
+
 void BAV::VulkanApplication::CreateIndexBuffer()
 {
     constexpr VkDeviceSize bufferSize = sizeof(uint16_t) * g_Indices.size();
@@ -1479,7 +1563,7 @@ void BAV::VulkanApplication::CreateIndexBuffer()
 
     constexpr VmaAllocationCreateInfo indexBufferAllocationCreateInfo
     {
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
     };
 
@@ -1698,15 +1782,20 @@ VkShaderModule BAV::VulkanApplication::CreateShaderModule(const std::vector<char
     return shaderModule;
 }
 
-void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usageFlags,
-    const VmaAllocationCreateInfo& allocationCreateInfo,
-    VmaAllocation& allocation, VkBuffer& buffer)
+void BAV::VulkanApplication::CreateBuffer(const VkDeviceSize bufferSize, const VkBufferUsageFlags usageFlags,
+                                          const VmaAllocationCreateInfo& allocationCreateInfo,
+                                          VmaAllocation& allocation, VkBuffer& buffer)
 {
+    if(bufferSize == 0)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create buffer, bufferSize is 0"));
+    }
+
     const VkBufferCreateInfo bufferCreateInfo
     {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = size,
-        .usage = usageFlags,
+        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size        = bufferSize,
+        .usage       = usageFlags,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
