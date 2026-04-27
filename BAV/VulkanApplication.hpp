@@ -69,6 +69,7 @@ namespace BAV
         void CreateFramebuffers();
         void CreateCommandPool();
         void CreateVertexBuffer();
+        void CreateTextureImage();
         void CreateIndexBuffer();
         void CreateUniformBuffers();
         void CreateDescriptorPool();
@@ -81,6 +82,9 @@ namespace BAV
             const VmaAllocationCreateInfo& allocationCreateInfo, VmaAllocation& allocation, VkBuffer& buffer);
 
         static void CreateStagingBuffer(VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer);
+
+        static void CreateImage(const VkImageCreateInfo& imageCreateInfo, VmaAllocation& allocation, VkImage& image);
+
 
         void RecreateSwapChain();
         void CleanUpSwapChain() const;

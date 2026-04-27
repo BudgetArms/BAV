@@ -1516,29 +1516,14 @@ void BAV::VulkanApplication::CreateTextureImage()
     // VK_IMAGE_LAYOUT_UNDEFINED: Not usable by the GPU and the very first transition will discard the texels.
     // VK_IMAGE_LAYOUT_PREINITIALIZED: Not usable by the GPU, but the first transition will preserve the texels.
 
-    constexpr VmaAllocationCreateInfo allocationCreateInfo
-    {
-        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-    };
 
-    VkImage textureImage{};
-    VmaAllocation textureImageAllocation{};
+    VkImage image{};
+    VmaAllocation imageAllocation{};
 
-    const VkResult result = vmaCreateImage(
-        g_VmaAllocator,
-        &imageCreateInfo,
-        &allocationCreateInfo,
-        &textureImage,
-        &textureImageAllocation,
-        nullptr);
-    if(result != VK_SUCCESS)
-    {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image!"));
-    }
+    CreateImage(imageCreateInfo, imageAllocation, image);
 
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
-    vmaDestroyImage(g_VmaAllocator, textureImage, textureImageAllocation);
+    vmaDestroyImage(g_VmaAllocator, image, imageAllocation);
 }
 
 void BAV::VulkanApplication::CreateIndexBuffer()
@@ -1833,6 +1818,29 @@ void BAV::VulkanApplication::CreateStagingBuffer(const VkDeviceSize bufferSize, 
         stagingBufferAllocationCreateInfo,
         allocation,
         buffer);
+}
+
+void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInfo,
+    VmaAllocation& allocation, VkImage& image)
+{
+    constexpr VmaAllocationCreateInfo allocationCreateInfo
+    {
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+    };
+
+    const VkResult result = vmaCreateImage(
+        g_VmaAllocator,
+        &imageCreateInfo,
+        &allocationCreateInfo,
+        &image,
+        &allocation,
+        nullptr);
+
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image!"));
+    }
 }
 
 void BAV::VulkanApplication::RecreateSwapChain()
