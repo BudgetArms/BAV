@@ -62,7 +62,7 @@ namespace BAV
         void CreateSwapChain();
         void CreateImageViews();
         void CreateRenderPass();
-        void CreateDescriptionSetLayout();
+        void CreateDescriptorSetLayout();
         void CreateGraphicsPipeline();
         void CreateFramebuffers();
         void CreateCommandPool();
@@ -151,7 +151,7 @@ namespace BAV
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
 
         VkSurfaceKHR m_Surface{};
-  // Queue
+        // Queue
         VkQueue m_GraphicsQueue{};
         VkQueue m_PresentQueue{};
 

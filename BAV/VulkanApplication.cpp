@@ -262,7 +262,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
-    CreateDescriptionSetLayout();
+    CreateDescriptorSetLayout();
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
@@ -975,7 +975,7 @@ void BAV::VulkanApplication::CreateRenderPass()
     }
 }
 
-void BAV::VulkanApplication::CreateDescriptionSetLayout()
+void BAV::VulkanApplication::CreateDescriptorSetLayout()
 {
     constexpr VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding
     {
