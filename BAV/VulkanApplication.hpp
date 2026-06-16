@@ -68,6 +68,7 @@ namespace BAV
         void CreateCommandPool();
         void CreateVertexBuffer();
         void CreateTextureImage();
+        void CreateTextureImageView();
         void CreateIndexBuffer();
         void CreateUniformBuffers();
         void CreateDescriptorPool();
@@ -83,6 +84,8 @@ namespace BAV
         static void CreateStagingBuffer(VkDeviceSize bufferSize, VmaAllocation& allocation, VkBuffer& buffer);
 
         static void CreateImage(const VkImageCreateInfo& imageCreateInfo, VmaAllocation& allocation, VkImage& image);
+
+        VkImageView CreateImageView(VkImage image, VkFormat format) const;
 
 
         void RecreateSwapChain();
@@ -138,6 +141,7 @@ namespace BAV
         std::vector<VmaAllocation> m_UniformBuffersAllocations{};
 
         VkImage m_Image{};
+        VkImageView m_ImageView{};
         VmaAllocation m_ImageAllocation{};
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};

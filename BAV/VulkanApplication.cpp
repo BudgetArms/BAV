@@ -54,6 +54,7 @@ struct Vertex
 {
     glm::vec2 Position;
     glm::vec3 Color;
+    glm::vec2 texCoord;
 
     static VkVertexInputBindingDescription GetBindingDescription()
     {
@@ -113,12 +114,20 @@ struct UniformBufferObject
 //     Vertex({-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}),
 // };
 
+// constexpr std::array<Vertex, 4> g_Vertices =
+// {
+//     Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }),
+//     Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }),
+//     Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }),
+//     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
+// };
+
 constexpr std::array<Vertex, 4> g_Vertices =
 {
-    Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }),
-    Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }),
-    Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }),
-    Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
+    Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f }),
+    Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }),
+    Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }),
+    Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f })
 };
 
 constexpr std::array<uint16_t, 6> g_Indices
@@ -267,6 +276,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateFramebuffers();
     CreateCommandPool();
     CreateTextureImage();
+    CreateTextureImageView();
     CreateVertexBuffer();
     CreateIndexBuffer();
     CreateUniformBuffers();
@@ -477,6 +487,8 @@ void BAV::VulkanApplication::CleanUp() const
     }
 
     vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
+
+
     vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 
     vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
@@ -491,6 +503,8 @@ void BAV::VulkanApplication::CleanUp() const
     {
         vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
     }
+
+    vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
 
     vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
 
@@ -821,42 +835,7 @@ void BAV::VulkanApplication::CreateImageViews()
 
     for(int i = 0; i < m_SwapChainImages.size(); ++i)
     {
-        // The viewType parameter allows you to treat images as
-        // 1D textures, 2D textures, 3D textures and cube maps.
-
-        VkImageViewCreateInfo createInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = m_SwapChainImages[i],
-
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format   = m_SwapChainImageFormat,
-
-            // .components =  = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .components = VkComponentMapping
-            {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-            },
-
-            .subresourceRange = VkImageSubresourceRange
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
-        };
-
-        const VkResult result = vkCreateImageView(m_LogicalDevice, &createInfo, nullptr, &m_SwapChainImageViews[i]);
-
-        if(result != VK_SUCCESS)
-        {
-            throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image view"));
-        }
+        m_SwapChainImageViews[i] = CreateImageView(m_SwapChainImages[i], m_SwapChainImageFormat);
     }
 }
 
@@ -975,6 +954,7 @@ void BAV::VulkanApplication::CreateRenderPass()
     }
 }
 
+
 void BAV::VulkanApplication::CreateDescriptorSetLayout()
 {
     constexpr VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding
@@ -1042,8 +1022,8 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         // const std::vector<char> vertShaderCode = ReadFile("Shaders/ColorTriangleVert.spv");
         // const std::vector<char> fragShaderCode = ReadFile("Shaders/ColorTriangleFrag.spv");
 
-        const std::vector<char> vertShaderCode = ReadFile("Shaders/Shader3DVert.spv");
-        const std::vector<char> fragShaderCode = ReadFile("Shaders/Shader3DFrag.spv");
+        const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureVert.spv");
+        const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureFrag.spv");
 
         vertShaderModule = CreateShaderModule(vertShaderCode);
         fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -1523,6 +1503,11 @@ void BAV::VulkanApplication::CreateTextureImage()
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
 }
 
+void BAV::VulkanApplication::CreateTextureImageView()
+{
+    m_ImageView = CreateImageView(m_Image, VK_FORMAT_R8G8B8A8_SRGB);
+}
+
 void BAV::VulkanApplication::CreateIndexBuffer()
 {
     constexpr VkDeviceSize bufferSize = sizeof(uint16_t) * g_Indices.size();
@@ -1836,6 +1821,33 @@ void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInf
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image!"));
     }
+}
+
+VkImageView BAV::VulkanApplication::CreateImageView(const VkImage image, const VkFormat format) const
+{
+    const VkImageViewCreateInfo viewInfo
+    {
+        .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image            = image,
+        .viewType         = VK_IMAGE_VIEW_TYPE_2D,
+        .format           = format,
+        .subresourceRange =
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel   = 0,
+            .levelCount     = 1,
+            .baseArrayLayer = 0,
+            .layerCount     = 1,
+        },
+    };
+
+    VkImageView imageView;
+    if(vkCreateImageView(m_LogicalDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create image view!"));
+    }
+
+    return imageView;
 }
 
 void BAV::VulkanApplication::RecreateSwapChain()
