@@ -27,7 +27,7 @@ VkResult BAV::CreationHelper::CreateDebugUtilsMessengerEXT(
     return createDebugMessengerFunc(instance, pCreateInfo, pAllocator, pDebugMessenger);
 }
 
-void BAV::CreationHelper::DestroyDebugUtilsMesengerEXT(
+void BAV::CreationHelper::DestroyDebugUtilsMessengerEXT(
     const VkInstance instance,
     const VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator
@@ -65,4 +65,3 @@ void BAV::CreationHelper::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessenger
     // but that might change in the future
     createInfo.pUserData = nullptr;
 }
-

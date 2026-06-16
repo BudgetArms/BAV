@@ -175,7 +175,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
 {
     std::cerr << "Validation Layer: " << pCallbackData->pMessage << '\n';
 
-    // MessgeSeverity:
+    // MessageSeverity:
 
     // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
     // Diagnostic message
@@ -184,13 +184,13 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
     // Informational message (e.g. creation of a resource), kind of verbose
 
     // VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-    // Message about behavior that is problably a bug, but might be an error
+    // Message about behavior that is probably a bug, but might be an error
 
     // VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
     // Message about behavior that is invalid and could cause crashes
 
 
-    // MessgeType:
+    // MessageType:
 
     // VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
     // Event unrelated to specification or performance
@@ -233,7 +233,7 @@ VkBool32 BAV::VulkanApplication::DebugCallback(
     // should be aborted or not.
 
     // If true, the call is aborted with error 'VK_ERROR_VALIDATION_FAILED_EXT'
-    // However, this is (normallY) only used to test the validation layers.
+    // However, this is (normally) only used to test the validation layers.
     // So, always return with 'VK_FALSE'.
 
 
@@ -452,7 +452,7 @@ void BAV::VulkanApplication::DrawFrame()
 
     // Presentation
 
-    VkSwapchainKHR swapchains[] = { m_SwapChain };
+    VkSwapchainKHR swapChains[] = { m_SwapChain };
 
     VkPresentInfoKHR presentInfo
     {
@@ -460,7 +460,7 @@ void BAV::VulkanApplication::DrawFrame()
         .waitSemaphoreCount = 1,
         .pWaitSemaphores    = signalSemaphores,
         .swapchainCount     = 1,
-        .pSwapchains        = swapchains,
+        .pSwapchains        = swapChains,
         .pImageIndices      = &imageIndex,
         .pResults           = nullptr, // optional
     };
@@ -476,7 +476,7 @@ void BAV::VulkanApplication::CleanUp() const
 {
     if constexpr(g_bEnableValidationLayers)
     {
-        CreationHelper::DestroyDebugUtilsMesengerEXT(m_Instance, m_DebugMessenger, nullptr);
+        CreationHelper::DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
 
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
@@ -637,7 +637,7 @@ void BAV::VulkanApplication::CreateLocalDevice()
     };
 
     // There used to be a difference between Instance- and Device specific
-    // validation layers, but now it's basically the same, so device's valdiation
+    // validation layers, but now it's basically the same, so device's validation
     // layers are ignored in Vulkan, but that's not the case for older versions of Vulkan.
 
     // So, for Backwards compatibility, we set the same validation layers for the
@@ -664,9 +664,8 @@ void BAV::VulkanApplication::CreateLocalDevice()
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create local device"));
     }
 
-    // Get the device queue that is implicitely created and destroyed upon
-    // creation and destruction respectifly of
-    // the logical device
+    // Get the device queue that is implicitly created and destroyed upon
+    // the creation and destruction respectively of the logical device
     constexpr uint32_t queueIndex = 0;
 
 
@@ -792,11 +791,11 @@ void BAV::VulkanApplication::CreateSwapChain()
     // back and get predictable results, you'll get the best
     // performance by enabling clipping.
 
-    // TODO: learn more about this so that I truely know what it means
+    // TODO: learn more about this so that I truly know what it means
     createInfo.clipped = VK_TRUE;
 
 
-    // That leaves one last field, oldSwapchain. With Vulkan,
+    // That leaves one last field, old Swap chain. With Vulkan,
     // it's possible that your swap chain becomes invalid or
     // unoptimized while your application is running, for example
     // because the window was resized. In that case the swap chain
@@ -887,12 +886,12 @@ void BAV::VulkanApplication::CreateRenderPass()
 
     // Initial layout:
     // specifies which layout the image will have, before the render pass begins
-    // VK_IMAGE_LAYOUT_UNDEFINED: for intial layout, it means
+    // VK_IMAGE_LAYOUT_UNDEFINED: for initial layout, it means
     // we don't care about what the previous image layout was
 
     // Final layout:
     // specifies the layout to automatically transition to when the render pass finishes.
-    // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: we want the image to be ready to presention using swapchain
+    // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: we want the image to be ready to presentation using swap chain
 
 
     // Color attachment reference:
@@ -1143,9 +1142,9 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // Clockwise (CW) or counterclockwise (CCW)
 
     // Depth bias:
-    // Depth value can be altered by adding with a constant value or value based on fragement's slope
+    // Depth value can be altered by adding with a constant value or value based on fragment's slope
     // This can be useful for shadow mapping,
-    // since we aren't doing shawdow mapping, we disable depth bias.
+    // since we aren't doing shadow mapping, we disable depth bias.
 
 
     // Multisampling:
@@ -1225,10 +1224,10 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     // or use alpha blending
     /*
     finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
-    finalColor.a = newALpha.a;
+    finalColor.a = newAlpha.a;
     */
 
-    // and then we need to set colorblending attachment to
+    // and then we need to set color blending attachment to
     /*
     colorBlendAttachment.blendEnable = VK_TRUE;
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -1665,7 +1664,7 @@ void BAV::VulkanApplication::CreateDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts(g_MaxFramesInFlight, m_DescriptorSetLayout);
 
-    const VkDescriptorSetAllocateInfo desciporAllocateInfo
+    const VkDescriptorSetAllocateInfo descriptorAllocateInfo
     {
         .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool     = m_DescriptorPool,
@@ -1676,7 +1675,7 @@ void BAV::VulkanApplication::CreateDescriptorSets()
 
     m_DescriptorSets.resize(g_MaxFramesInFlight);
 
-    const VkResult result = vkAllocateDescriptorSets(m_LogicalDevice, &desciporAllocateInfo, m_DescriptorSets.data());
+    const VkResult result = vkAllocateDescriptorSets(m_LogicalDevice, &descriptorAllocateInfo, m_DescriptorSets.data());
     if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to allocate descriptor sets"));
@@ -1786,7 +1785,7 @@ void BAV::VulkanApplication::CreateSyncObjects()
         if(result != VK_SUCCESS)
         {
             throw std::runtime_error(
-                FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinsihed, index: " + std::to_string(i)));
+                FUNCTION_NAME + std::string(" Failed to create semaphore RenderFinished, index: " + std::to_string(i)));
         }
     }
 }
@@ -1887,7 +1886,7 @@ void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInf
     }
 }
 
-VkImageView BAV::VulkanApplication::CreateImageView(const VkImage image, const VkFormat format) const
+VkImageView BAV::VulkanApplication::CreateImageView(VkImage image, const VkFormat format) const
 {
     const VkImageViewCreateInfo viewInfo
     {
@@ -2006,8 +2005,8 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
 
         // Viewports and scissors
 
-        // framebuffer uses swapchain images, and since swapchain's
-        // image sizes can differ from WIDTH/HEIGHT, we should use swapchain's dimensions
+        // framebuffer uses swap chain images, and since swap chain's
+        // image sizes can differ from WIDTH/HEIGHT, we should use swap chain's dimensions
         const VkViewport viewport
         {
             .x        = 0.0f,
@@ -2054,10 +2053,10 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     }
 }
 
-void BAV::VulkanApplication::CopyBuffer(const VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
+void BAV::VulkanApplication::CopyBuffer(VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
                                         const VkDeviceSize size) const
 {
-    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
     const VkBufferCopy copyRegion
     {
@@ -2122,7 +2121,8 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
     const float timePast   = std::chrono::duration<float, std::chrono::seconds::period>
             (currentTime - startTime).count();
 
-    const float aspectRatio = m_SwapChainExtent.width / static_cast<float>(m_SwapChainExtent.height);
+    const float aspectRatio = static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.
+        height);
 
     UniformBufferObject ubo
     {
@@ -2149,7 +2149,7 @@ void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
                                                    const VkImageLayout oldLayout,
                                                    const VkImageLayout newLayout) const
 {
-    const VkCommandBuffer commanddBuffer = BeginSingleTimeCommands();
+    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
     const VkImageMemoryBarrier imageMemoryBarrier
     {
@@ -2171,7 +2171,7 @@ void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
         },
     };
 
-    vkCmdPipelineBarrier(commanddBuffer,
+    vkCmdPipelineBarrier(commandBuffer,
                          srcStageFlags,
                          dstStageFlags,
                          0,
@@ -2179,7 +2179,7 @@ void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
                          0, nullptr,
                          1, &imageMemoryBarrier);
 
-    EndSingleTimeCommands(commanddBuffer);
+    EndSingleTimeCommands(commandBuffer);
 }
 
 VkCommandBuffer BAV::VulkanApplication::BeginSingleTimeCommands() const
@@ -2507,7 +2507,7 @@ VkPresentModeKHR BAV::VulkanApplication::ChooseSwapChainPresentMode(
     // resulting in fewer latency issues than standard vertical sync.
     // This is commonly known as "triple buffering", although the
     // existence of three buffers alone does not necessarily mean that the
-    // framerate is unlocked.
+    // frame rate is unlocked.
 
     // PRESENT_MODE_MAILBOX: 'best' option
     // PRESENT_MODE_FIFO (always available): best for mobile bc energy efficient
@@ -2540,7 +2540,7 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
     // bounds. But we must specify the resolution in the correct unit.
 
     // My conclusion:
-    // Vulkans says match the resolution of (GLFW) window,
+    // Vulkan says match the resolution of (GLFW) window,
     // I assume this was because screen cords and resolution
     // was (almost) always 1:1.
 
@@ -2606,7 +2606,7 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
 
     // Read all bytes at once
 
-    // std::ifstream::seek(...) sets input position indicator of streambuf object
+    // std::ifstream::seek(...) sets input position indicator of stream buffer object
     // beg: beginning of file
     file.seekg(0, std::ios::beg);
     file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));

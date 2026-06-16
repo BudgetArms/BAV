@@ -13,7 +13,7 @@ namespace BAV
             const VkAllocationCallbacks* pAllocator,
             VkDebugUtilsMessengerEXT* pDebugMessenger);
 
-        static void DestroyDebugUtilsMesengerEXT(
+        static void DestroyDebugUtilsMessengerEXT(
             VkInstance instance,
             VkDebugUtilsMessengerEXT debugMessenger,
             const VkAllocationCallbacks* pAllocator);
