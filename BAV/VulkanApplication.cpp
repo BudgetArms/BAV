@@ -388,9 +388,9 @@ void BAV::VulkanApplication::MainLoop()
 
 void BAV::VulkanApplication::DrawFrame()
 {
-    VkCommandBuffer currentCommandBuffer      = m_CommandBuffers[m_CurrentFrame];
-    const VkSemaphore imageAvailableSemaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
-    const VkFence currentFence                = m_InFlightFences[m_CurrentFrame];
+    VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_CurrentFrame];
+    VkSemaphore imageAvailableSemaphore  = m_ImageAvailableSemaphores[m_CurrentFrame];
+    VkFence currentFence                 = m_InFlightFences[m_CurrentFrame];
 
     // Wait for fences
     vkWaitForFences(m_LogicalDevice, 1, &currentFence, VK_TRUE, UINT64_MAX);
@@ -402,7 +402,7 @@ void BAV::VulkanApplication::DrawFrame()
     vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
                           imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    const VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
+    VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
     // Timeout:
     //     if set to UINT64_MAX, it is disabled
 
@@ -1662,7 +1662,7 @@ void BAV::VulkanApplication::CreateDescriptorPool()
 
 void BAV::VulkanApplication::CreateDescriptorSets()
 {
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(g_MaxFramesInFlight, m_DescriptorSetLayout);
+    std::vector descriptorSetLayouts(g_MaxFramesInFlight, m_DescriptorSetLayout);
 
     const VkDescriptorSetAllocateInfo descriptorAllocateInfo
     {
@@ -2053,7 +2053,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
     }
 }
 
-void BAV::VulkanApplication::CopyBuffer(VkBuffer sourceBuffer, const VkBuffer destinationBuffer,
+void BAV::VulkanApplication::CopyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer,
                                         const VkDeviceSize size) const
 {
     VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
@@ -2073,7 +2073,7 @@ void BAV::VulkanApplication::CopyBuffer(VkBuffer sourceBuffer, const VkBuffer de
 void BAV::VulkanApplication::CopyBufferToImage(VkBuffer sourceBuffer, VkImage image,
                                                uint32_t width, uint32_t height) const
 {
-    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
     const VkBufferImageCopy copyRegion
     {
@@ -2141,7 +2141,7 @@ void BAV::VulkanApplication::UpdateUniformBuffer(const uint32_t currentImage) co
         sizeof(UniformBufferObject));
 }
 
-void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
+void BAV::VulkanApplication::TransitionImageLayout(VkImage image,
                                                    const VkPipelineStageFlags srcStageFlags,
                                                    const VkPipelineStageFlags dstStageFlags,
                                                    const VkAccessFlags srcAccessFlags,
@@ -2149,7 +2149,7 @@ void BAV::VulkanApplication::TransitionImageLayout(const VkImage image,
                                                    const VkImageLayout oldLayout,
                                                    const VkImageLayout newLayout) const
 {
-    const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
     const VkImageMemoryBarrier imageMemoryBarrier
     {

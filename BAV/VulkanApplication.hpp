@@ -5,8 +5,8 @@
 #include <vector>
 #include <vk_mem_alloc.h>
 
-#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
 
 
 class GLFWwindow;
