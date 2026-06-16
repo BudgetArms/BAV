@@ -69,6 +69,7 @@ namespace BAV
         void CreateVertexBuffer();
         void CreateTextureImage();
         void CreateTextureImageView();
+        void CreateTextureSampler();
         void CreateIndexBuffer();
         void CreateUniformBuffers();
         void CreateDescriptorPool();
@@ -142,6 +143,7 @@ namespace BAV
 
         VkImage m_Image{};
         VkImageView m_ImageView{};
+        VkSampler m_Sampler{};
         VmaAllocation m_ImageAllocation{};
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};

@@ -283,6 +283,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateCommandPool();
     CreateTextureImage();
     CreateTextureImageView();
+    CreateTextureSampler();
     CreateVertexBuffer();
     CreateIndexBuffer();
     CreateUniformBuffers();
@@ -1512,6 +1513,63 @@ void BAV::VulkanApplication::CreateTextureImage()
 void BAV::VulkanApplication::CreateTextureImageView()
 {
     m_ImageView = CreateImageView(m_Image, VK_FORMAT_R8G8B8A8_SRGB);
+}
+
+void BAV::VulkanApplication::CreateTextureSampler()
+{
+    // Get Max Sampler anisotropy
+    // It could be better to store them at beginning instead of fetching when
+    // CreateTextureSampler is called
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+
+
+    const VkSamplerCreateInfo samplerCreateInfo
+    {
+        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter               = VK_FILTER_LINEAR,
+        .minFilter               = VK_FILTER_LINEAR,
+        .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mipLodBias              = 0.0f,
+        .anisotropyEnable        = VK_TRUE,
+        .maxAnisotropy           = properties.limits.maxSamplerAnisotropy,
+        .compareEnable           = VK_FALSE,
+        .compareOp               = VK_COMPARE_OP_ALWAYS,
+        .minLod                  = 0.0f,
+        .maxLod                  = 0.0f,
+        .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+
+    };
+
+    // Sampler Address Modes:
+
+    // VK_SAMPLER_ADDRESS_MODE_REPEAT:
+    //      Repeat the texture when going beyond the image dimensions.
+    // VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT:
+    //      Like repeat, but inverts the coordinates to mirror the image when going beyond the dimensions.
+    // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
+    //      Take the color of the edge closest to the coordinate beyond the image dimensions.
+    // VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
+    //      Like clamp to edge, but instead uses the edge opposite to the closest edge.
+    // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:
+    //      Return a solid color when sampling beyond the dimensions of the image.
+
+    // BorderColor:
+    // The borderColor field specifies which color is returned when sampling
+    // beyond the image with clamp to border addressing mode.
+    // It is possible to return black, white or transparent in
+    // either float or int formats. You cannot specify an arbitrary color.
+
+
+    const VkResult result = vkCreateSampler(m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Sampler);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed To Create Sampler!"));
+    }
 }
 
 void BAV::VulkanApplication::CreateIndexBuffer()
