@@ -619,7 +619,10 @@ void BAV::VulkanApplication::CreateLocalDevice()
 
 
     // Device features to be used, for now empty (so everything VK_FALSE)
-    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceFeatures deviceFeatures
+    {
+        .samplerAnisotropy = VK_TRUE
+    };
 
     const std::vector<const char*> charDeviceExtensions = ConversionHelpers::StringVectorToCharVector(
         m_DeviceExtensions);
@@ -2331,11 +2334,15 @@ bool BAV::VulkanApplication::IsDeviceSuitable(VkPhysicalDevice device) const
 
     const bool areRequiredDeviceExtensionsSupported = DoesDeviceSupportRequiredExtensions(device);
 
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
     bool isSwapChainSuitable = false;
     if(areRequiredDeviceExtensionsSupported)
     {
         const SwapChainSupportDetails swapChainSupportDetails = QuerySwapChainSupport(device);
-        isSwapChainSuitable = !swapChainSupportDetails.Formats.empty() && !swapChainSupportDetails.PresentModes.empty();
+        isSwapChainSuitable = !swapChainSupportDetails.Formats.empty() && !swapChainSupportDetails.PresentModes.empty()
+                && supportedFeatures.samplerAnisotropy;
     }
 
     return queueFamilyIndices.IsComplete() && areRequiredDeviceExtensionsSupported && isSwapChainSuitable;
