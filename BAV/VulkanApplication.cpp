@@ -511,6 +511,7 @@ void BAV::VulkanApplication::CleanUp() const
         vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
     }
 
+    vkDestroySampler(m_LogicalDevice, m_Sampler, nullptr);
     vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
 
     vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
