@@ -479,6 +479,26 @@ void BAV::VulkanApplication::CleanUp() const
         CreationHelper::DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
     }
 
+    CleanUpSwapChain();
+
+    vkDestroyPipeline(m_LogicalDevice, m_GraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
+    vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
+
+    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
+    {
+        vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
+    }
+
+    vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
+
+    vkDestroySampler(m_LogicalDevice, m_Sampler, nullptr);
+    vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
+
+    vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
+
+    vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
+
     vmaDestroyBuffer(g_VmaAllocator, m_VertexBuffer, m_VertexBufferAllocation);
     vmaDestroyBuffer(g_VmaAllocator, m_IndexBuffer, m_IndexBufferAllocation);
 
@@ -493,28 +513,7 @@ void BAV::VulkanApplication::CleanUp() const
         vkDestroySemaphore(m_LogicalDevice, semaphore, nullptr);
     }
 
-    vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
-
-
-    vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
-
     vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
-
-    vkDestroyPipeline(m_LogicalDevice, m_GraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
-    vkDestroyRenderPass(m_LogicalDevice, m_RenderPass, nullptr);
-
-    CleanUpSwapChain();
-
-    for(size_t i = 0; i < g_MaxFramesInFlight; ++i)
-    {
-        vmaDestroyBuffer(g_VmaAllocator, m_UniformBuffers[i], m_UniformBuffersAllocations[i]);
-    }
-
-    vkDestroySampler(m_LogicalDevice, m_Sampler, nullptr);
-    vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
-
-    vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
 
     vmaDestroyAllocator(g_VmaAllocator);
 
