@@ -2166,9 +2166,9 @@ void BAV::VulkanApplication::TransitionImageLayout(VkImage image,
         .image               = image,
         .subresourceRange    =
         {
-            .aspectMask     = 0, // TODO: fill later in
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel   = 0,
-            .levelCount     = 0,
+            .levelCount     = 1,
             .baseArrayLayer = 0,
             .layerCount     = 1,
         },
