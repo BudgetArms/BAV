@@ -975,14 +975,30 @@ void BAV::VulkanApplication::CreateDescriptorSetLayout()
         .pImmutableSamplers = nullptr, // optional
     };
 
-    const VkDescriptorSetLayoutCreateInfo uniformBufferObjectSetLayoutCreateInfo
+    const VkDescriptorSetLayoutBinding samplerLayoutBinding
     {
-        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 1,
-        .pBindings    = &uniformBufferObjectLayoutBinding,
+        .binding            = 1,
+        .descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount    = 1,
+        .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .pImmutableSamplers = nullptr,
     };
 
-    const VkResult result = vkCreateDescriptorSetLayout(m_LogicalDevice, &uniformBufferObjectSetLayoutCreateInfo,
+    std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings
+    {
+        uniformBufferObjectLayoutBinding,
+        samplerLayoutBinding
+    };
+
+
+    const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
+    {
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size()),
+        .pBindings    = descriptorSetLayoutBindings.data(),
+    };
+
+    const VkResult result = vkCreateDescriptorSetLayout(m_LogicalDevice, &descriptorSetLayoutCreateInfo,
                                                         nullptr, &m_DescriptorSetLayout);
     if(result != VK_SUCCESS)
     {
@@ -1644,25 +1660,37 @@ void BAV::VulkanApplication::CreateUniformBuffers()
 
 void BAV::VulkanApplication::CreateDescriptorPool()
 {
-    constexpr VkDescriptorPoolSize descriptorPoolSize
+    constexpr VkDescriptorPoolSize uniformBufferPoolSizeDescriptor
     {
         .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<size_t>(g_MaxFramesInFlight),
+        .descriptorCount = static_cast<uint32_t>(g_MaxFramesInFlight),
+    };
+
+    constexpr VkDescriptorPoolSize combinedImageSamplerPoolSizeDescriptor
+    {
+        .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = static_cast<uint32_t>(g_MaxFramesInFlight),
+    };
+
+    std::array<VkDescriptorPoolSize, 2> poolSizeDescriptors
+    {
+        uniformBufferPoolSizeDescriptor,
+        combinedImageSamplerPoolSizeDescriptor
     };
 
     const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo
     {
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .maxSets       = static_cast<uint32_t>(g_MaxFramesInFlight),
-        .poolSizeCount = 1,
-        .pPoolSizes    = &descriptorPoolSize,
+        .poolSizeCount = static_cast<uint32_t>(poolSizeDescriptors.size()),
+        .pPoolSizes    = poolSizeDescriptors.data(),
     };
 
     const VkResult result = vkCreateDescriptorPool(m_LogicalDevice, &descriptorPoolCreateInfo, nullptr,
                                                    &m_DescriptorPool);
     if(result != VK_SUCCESS)
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create descriptor pool"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create descriptor pools"));
     }
 }
 
@@ -1697,20 +1725,45 @@ void BAV::VulkanApplication::CreateDescriptorSets()
             .range  = sizeof(UniformBufferObject),
         };
 
-        const VkWriteDescriptorSet writeDescriptorSet
+        const VkWriteDescriptorSet uniformBufferDescriptorSet
         {
-            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet           = m_DescriptorSets[i],
-            .dstBinding       = 0,
-            .dstArrayElement  = 0,
-            .descriptorCount  = 1,
-            .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pImageInfo       = nullptr, // optional
-            .pBufferInfo      = &bufferInfo,
-            .pTexelBufferView = nullptr, // optional
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = m_DescriptorSets[i],
+            .dstBinding      = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo     = &bufferInfo,
         };
 
-        vkUpdateDescriptorSets(m_LogicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+
+        const VkDescriptorImageInfo imageInfo
+        {
+            .sampler     = m_Sampler,
+            .imageView   = m_ImageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+
+        const VkWriteDescriptorSet combinedImageSamplerDescriptorSet
+        {
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = m_DescriptorSets[i],
+            .dstBinding      = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo      = &imageInfo,
+            .pBufferInfo     = nullptr,
+        };
+
+
+        const std::array descriptorSets
+        {
+            uniformBufferDescriptorSet,
+            combinedImageSamplerDescriptorSet
+        };
+
+        vkUpdateDescriptorSets(m_LogicalDevice, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
     }
 }
 
