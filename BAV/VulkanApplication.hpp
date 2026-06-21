@@ -67,6 +67,7 @@ namespace BAV
         void CreateFramebuffers();
         void CreateCommandPool();
         void CreateVertexBuffer();
+        void CreateDepthResources();
         void CreateTextureImage();
         void CreateTextureImageView();
         void CreateTextureSampler();
@@ -86,7 +87,7 @@ namespace BAV
 
         static void CreateImage(const VkImageCreateInfo& imageCreateInfo, VmaAllocation& allocation, VkImage& image);
 
-        VkImageView CreateImageView(VkImage image, VkFormat format) const;
+        VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags imageAspectFlags) const;
 
 
         void RecreateSwapChain();
@@ -113,6 +114,10 @@ namespace BAV
         [[nodiscard]] QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
+        [[nodiscard]] VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                                   VkFormatFeatureFlags features) const;
+
+
         [[nodiscard]] static VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(
             const std::vector<VkSurfaceFormatKHR>& availableFormats);
         [[nodiscard]] static VkPresentModeKHR ChooseSwapChainPresentMode(
@@ -120,6 +125,10 @@ namespace BAV
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
         [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
+
+        [[nodiscard]] VkFormat FindDepthFormat() const;
+        [[nodiscard]] bool HasStencilComponent(VkFormat format) const;
+
 
         GLFWwindow* m_Window{};
         VkInstance m_Instance{};
@@ -145,6 +154,10 @@ namespace BAV
         VkImageView m_ImageView{};
         VkSampler m_Sampler{};
         VmaAllocation m_ImageAllocation{};
+
+        VkImage m_DepthImage{};
+        VkImageView m_DepthImageView{};
+        VmaAllocation m_DepthImageAllocation{};
 
         std::vector<VkCommandBuffer> m_CommandBuffers{};
         std::vector<VkDescriptorSet> m_DescriptorSets{};

@@ -17,6 +17,7 @@
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DDEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -310,6 +311,7 @@ void BAV::VulkanApplication::InitVulkan()
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
+    CreateDepthResources();
     CreateTextureImage();
     CreateTextureImageView();
     CreateTextureSampler();
@@ -525,6 +527,7 @@ void BAV::VulkanApplication::CleanUp() const
     vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
 
     vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
+    vmaDestroyImage(g_VmaAllocator, m_Image, m_DepthImageAllocation);
 
     vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 
@@ -873,7 +876,9 @@ void BAV::VulkanApplication::CreateImageViews()
 
     for(int i = 0; i < m_SwapChainImages.size(); ++i)
     {
-        m_SwapChainImageViews[i] = CreateImageView(m_SwapChainImages[i], m_SwapChainImageFormat);
+        m_SwapChainImageViews[i] = CreateImageView(m_SwapChainImages[i],
+                                                   m_SwapChainImageFormat,
+                                                   VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
@@ -1485,6 +1490,39 @@ void BAV::VulkanApplication::CreateVertexBuffer()
     vmaDestroyBuffer(g_VmaAllocator, stagingBuffer, stagingBufferAllocation);
 }
 
+void BAV::VulkanApplication::CreateDepthResources()
+{
+    VkFormat depthFormat = FindDepthFormat();
+
+    // void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInfo,
+    // VmaAllocation& allocation, VkImage& image)
+    const VkImageCreateInfo depthImageCreateInfo
+    {
+        .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags     = 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format    = depthFormat,
+        .extent    =
+        {
+            .width  = m_SwapChainExtent.width,
+            .height = m_SwapChainExtent.height,
+            .depth  = 1,
+        },
+        .mipLevels     = 1,
+        .arrayLayers   = 1,
+        .samples       = VK_SAMPLE_COUNT_1_BIT,
+        .tiling        = VK_IMAGE_TILING_OPTIMAL,
+        .usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+
+    CreateImage(depthImageCreateInfo, m_DepthImageAllocation, m_DepthImage);
+
+    m_DepthImageView = CreateImageView(m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
 void BAV::VulkanApplication::CreateTextureImage()
 {
     int textureWidth{};
@@ -1572,7 +1610,7 @@ void BAV::VulkanApplication::CreateTextureImage()
 
 void BAV::VulkanApplication::CreateTextureImageView()
 {
-    m_ImageView = CreateImageView(m_Image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_ImageView = CreateImageView(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void BAV::VulkanApplication::CreateTextureSampler()
@@ -1984,7 +2022,8 @@ void BAV::VulkanApplication::CreateImage(const VkImageCreateInfo& imageCreateInf
     }
 }
 
-VkImageView BAV::VulkanApplication::CreateImageView(VkImage image, const VkFormat format) const
+VkImageView BAV::VulkanApplication::CreateImageView(const VkImage image, const VkFormat format,
+                                                    VkImageAspectFlags imageAspectFlags) const
 {
     const VkImageViewCreateInfo viewInfo
     {
@@ -1994,7 +2033,7 @@ VkImageView BAV::VulkanApplication::CreateImageView(VkImage image, const VkForma
         .format           = format,
         .subresourceRange =
         {
-            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask     = imageAspectFlags,
             .baseMipLevel   = 0,
             .levelCount     = 1,
             .baseArrayLayer = 0,
@@ -2562,6 +2601,36 @@ BAV::SwapChainSupportDetails BAV::VulkanApplication::QuerySwapChainSupport(VkPhy
     return details;
 }
 
+VkFormat BAV::VulkanApplication::FindSupportedFormat(const std::vector<VkFormat>& candidates,
+                                                     const VkImageTiling tiling,
+                                                     const VkFormatFeatureFlags features) const
+{
+    if(candidates.empty())
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed! Candidates is Empty!"));
+    }
+
+
+    for(VkFormat format : candidates)
+    {
+        VkFormatProperties properties{};
+        vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &properties);
+
+        const bool hasSameLinearTilingFeatures  = (properties.linearTilingFeatures & features) == features;
+        const bool hasSameOptimalTilingFeatures = (properties.optimalTilingFeatures & features) == features;
+
+        if((tiling == VK_IMAGE_TILING_LINEAR && hasSameLinearTilingFeatures) ||
+            (tiling == VK_IMAGE_TILING_OPTIMAL && hasSameOptimalTilingFeatures))
+        {
+            return format;
+        }
+    }
+
+    // If no format is found that is supports the features needed, then throw
+    throw std::runtime_error(
+        FUNCTION_NAME + std::string(" Failed To Find Format that Supports All Features In Candidates!"));
+}
+
 VkSurfaceFormatKHR BAV::VulkanApplication::ChooseSwapChainSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
@@ -2730,4 +2799,26 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
     file.close();
 
     return buffer;
+}
+
+VkFormat BAV::VulkanApplication::FindDepthFormat() const
+{
+    const std::vector formats =
+    {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT
+    };
+
+    return FindSupportedFormat(
+        formats,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+bool BAV::VulkanApplication::HasStencilComponent(VkFormat format) const
+{
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+            format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
