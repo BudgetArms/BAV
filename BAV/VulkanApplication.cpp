@@ -1256,15 +1256,16 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo
     {
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable       = VK_FALSE,
-        .depthWriteEnable      = VK_FALSE,
-        .depthCompareOp        = VK_COMPARE_OP_NEVER, // picked random compare operation
+        .depthTestEnable       = VK_TRUE,
+        .depthWriteEnable      = VK_TRUE,
+        .depthCompareOp        = VK_COMPARE_OP_LESS,
         .depthBoundsTestEnable = VK_FALSE,
         .stencilTestEnable     = VK_FALSE,
         .front                 = {},   // optional
         .back                  = {},   // optional
         .minDepthBounds        = 0.0f, // optional
         .maxDepthBounds        = 1.0f, // optional
+
     };
 
     // Will be discussed more detailed later on
@@ -2133,7 +2134,11 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to begin command buffer"));
     }
 
-    VkClearValue clearColor = { 0.f, 0.f, 0.f, 1.f };
+    // Clear color has to be in the same order as attachments
+    std::array<VkClearValue, 2> clearColors{};
+    clearColors[0].color        = VkClearColorValue({ 0.f, 0.f, 0.f, 1.f });
+    clearColors[1].depthStencil = VkClearDepthStencilValue(1.f, 0);
+
 
     VkRenderPassBeginInfo renderPassBeginInfo
     {
@@ -2145,8 +2150,8 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
             .offset = { 0, 0 },
             .extent = m_SwapChainExtent
         },
-        .clearValueCount = 1,
-        .pClearValues    = &clearColor,
+        .clearValueCount = static_cast<uint32_t>(clearColors.size()),
+        .pClearValues    = clearColors.data(),
     };
 
 
