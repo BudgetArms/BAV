@@ -53,7 +53,7 @@ VmaAllocator g_VmaAllocator = nullptr;
 
 struct Vertex
 {
-    glm::vec2 Position;
+    glm::vec3 Position;
     glm::vec3 Color;
     glm::vec2 TexCoord;
 
@@ -84,7 +84,7 @@ struct Vertex
             {
                 .location = 0,
                 .binding  = 0,
-                .format   = VK_FORMAT_R32G32_SFLOAT,
+                .format   = VK_FORMAT_R32G32B32_SFLOAT,
                 .offset   = offsetof(Vertex, Position),
             },
             VkVertexInputAttributeDescription
@@ -129,12 +129,20 @@ struct UniformBufferObject
 //     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
 // };
 
+// constexpr std::array g_Vertices =
+// {
+//     Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f }),
+//     Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }),
+//     Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }),
+//     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f })
+// };
+
 constexpr std::array g_Vertices =
 {
-    Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f }),
-    Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }),
-    Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }),
-    Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f })
+    Vertex({ -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }),
+    Vertex({ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f }),
+    Vertex({ 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }),
+    Vertex({ -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f })
 };
 
 constexpr std::array<uint16_t, 6> g_Indices
