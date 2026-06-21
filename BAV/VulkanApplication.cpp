@@ -309,9 +309,9 @@ void BAV::VulkanApplication::InitVulkan()
     CreateRenderPass();
     CreateDescriptorSetLayout();
     CreateGraphicsPipeline();
+    CreateDepthResources();
     CreateFramebuffers();
     CreateCommandPool();
-    CreateDepthResources();
     CreateTextureImage();
     CreateTextureImageView();
     CreateTextureSampler();
@@ -944,13 +944,33 @@ void BAV::VulkanApplication::CreateRenderPass()
     // Layout:
     // VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: this gives the best performance
 
+    // Depth attachment:
+    VkAttachmentDescription depthAttachment
+    {
+        .format         = FindDepthFormat(),
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+
+    VkAttachmentReference depthAttachmentReference
+    {
+        .attachment = 1,
+        .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+
 
     // Subpass:
     VkSubpassDescription subpass
     {
-        .pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount = 1,
-        .pColorAttachments    = &colorAttachmentReference,
+        .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount    = 1,
+        .pColorAttachments       = &colorAttachmentReference,
+        .pDepthStencilAttachment = &depthAttachmentReference
     };
 
     // Bind point:
@@ -969,28 +989,33 @@ void BAV::VulkanApplication::CreateRenderPass()
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
 
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-        .srcAccessMask   = 0,
-        .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .srcAccessMask   = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
     };
 
+    std::array<VkAttachmentDescription, 2> attachments
+    {
+        colorAttachment,
+        depthAttachment
+    };
 
     // Render pass:
     VkRenderPassCreateInfo renderPassCreateInfo
     {
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = 1,
-        .pAttachments    = &colorAttachment,
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
         .subpassCount    = 1,
         .pSubpasses      = &subpass,
         .dependencyCount = 1,
         .pDependencies   = &dependency,
     };
 
-    VkResult result = vkCreateRenderPass(m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass);
+    const VkResult result = vkCreateRenderPass(m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass);
     if(result != VK_SUCCESS)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to create render pass"));
@@ -1396,17 +1421,18 @@ void BAV::VulkanApplication::CreateFramebuffers()
 
     for(size_t i = 0; i < m_SwapChainFramebuffers.size(); ++i)
     {
-        VkImageView attachments[] =
+        std::array<VkImageView, 2> attachments =
         {
-            m_SwapChainImageViews[i]
+            m_SwapChainImageViews[i],
+            m_DepthImageView
         };
 
         VkFramebufferCreateInfo framebufferCreateInfo
         {
             .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .renderPass      = m_RenderPass,
-            .attachmentCount = 1,
-            .pAttachments    = attachments,
+            .attachmentCount = static_cast<uint32_t>(attachments.size()),
+            .pAttachments    = attachments.data(),
             .width           = m_SwapChainExtent.width,
             .height          = m_SwapChainExtent.height,
             .layers          = 1,
