@@ -1062,8 +1062,11 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
         // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureVert.spv");
         // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureFrag.spv");
 
-        const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorVert.spv");
-        const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorFrag.spv");
+        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorVert.spv");
+        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorFrag.spv");
+
+        const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTexture3DVert.spv");
+        const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTexture3DFrag.spv");
 
 
         vertShaderModule = CreateShaderModule(vertShaderCode);
