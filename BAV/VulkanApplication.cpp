@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -128,7 +129,7 @@ struct UniformBufferObject
 //     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
 // };
 
-constexpr std::array<Vertex, 4> g_Vertices =
+constexpr std::array g_Vertices =
 {
     Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f }),
     Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }),
@@ -2664,9 +2665,15 @@ std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
     // ate: start reading from end of file
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
+    if(!std::filesystem::exists(filename))
+    {
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed, File Not Found: ") + filename);
+    }
+
+
     if(!file.is_open())
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read the file"));
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read the file: ") + filename);
     }
 
     // std::ifstream::tellg() returns the current position of the input pointer.
