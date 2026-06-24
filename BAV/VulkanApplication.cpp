@@ -281,8 +281,8 @@ void BAV::VulkanApplication::InitWindow()
     // Tells GLFW not to create an OpenGL Context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    // We disable resizing, for some reason that I don't know yet
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    // Enable Resizing
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 
     // Create Window
@@ -309,9 +309,9 @@ void BAV::VulkanApplication::InitVulkan()
     CreateRenderPass();
     CreateDescriptorSetLayout();
     CreateGraphicsPipeline();
+    CreateCommandPool();
     CreateDepthResources();
     CreateFramebuffers();
-    CreateCommandPool();
     CreateTextureImage();
     CreateTextureImageView();
     CreateTextureSampler();
@@ -423,26 +423,40 @@ void BAV::VulkanApplication::DrawFrame()
     VkSemaphore imageAvailableSemaphore  = m_ImageAvailableSemaphores[m_CurrentFrame];
     VkFence currentFence                 = m_InFlightFences[m_CurrentFrame];
 
+
     // Wait for fences
     vkWaitForFences(m_LogicalDevice, 1, &currentFence, VK_TRUE, UINT64_MAX);
+
+
+    uint32_t imageIndex{};
+    const VkResult acquireImageResult = vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
+                                                              imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if(acquireImageResult != VK_SUCCESS)
+    {
+        if(acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            RecreateSwapChain();
+            return;
+        }
+
+        throw std::runtime_error("Failed To Acquire Swap Chain Image!");
+    }
+
+    UpdateUniformBuffer(m_CurrentFrame);
+
 
     // Reset fences
     vkResetFences(m_LogicalDevice, 1, &currentFence);
 
-    uint32_t imageIndex{};
-    vkAcquireNextImageKHR(m_LogicalDevice, m_SwapChain, UINT64_MAX,
-                          imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
     VkSemaphore renderFinishedSemaphore = m_RenderFinishedSemaphores[imageIndex];
     // Timeout:
     //     if set to UINT64_MAX, it is disabled
 
-
     // Recording command buffer
     vkResetCommandBuffer(currentCommandBuffer, 0);
     RecordCommandBuffer(currentCommandBuffer, imageIndex);
-
-    UpdateUniformBuffer(m_CurrentFrame);
 
     // Creation submit semaphores
     VkSemaphore waitSemaphores[]      = { imageAvailableSemaphore };
@@ -527,7 +541,6 @@ void BAV::VulkanApplication::CleanUp() const
     vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
 
     vmaDestroyImage(g_VmaAllocator, m_Image, m_ImageAllocation);
-    vmaDestroyImage(g_VmaAllocator, m_Image, m_DepthImageAllocation);
 
     vkDestroyDescriptorSetLayout(m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 
@@ -1420,7 +1433,7 @@ void BAV::VulkanApplication::CreateFramebuffers()
 {
     m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
 
-    for(size_t i = 0; i < m_SwapChainFramebuffers.size(); ++i)
+    for(size_t i = 0; i < m_SwapChainImageViews.size(); ++i)
     {
         std::array<VkImageView, 2> attachments =
         {
@@ -1446,8 +1459,7 @@ void BAV::VulkanApplication::CreateFramebuffers()
         if(result != VK_SUCCESS)
         {
             throw std::runtime_error(FUNCTION_NAME +
-                std::string(" Failed to create framebuffer (index: " + std::to_string(i)
-                    + ")"));
+                std::string(" Failed to create framebuffer (index: " + std::to_string(i) + ")"));
         }
     }
 }
@@ -2079,6 +2091,16 @@ VkImageView BAV::VulkanApplication::CreateImageView(const VkImage image, const V
 
 void BAV::VulkanApplication::RecreateSwapChain()
 {
+    int width{};
+    int height{};
+
+    // Get width or height
+    while(width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(m_Window, &width, &height);
+        glfwWaitEvents();
+    }
+
     // Wait until logical device is idle, e.g. we don't
     // want to change stuff while it's in use
     vkDeviceWaitIdle(m_LogicalDevice);
@@ -2090,11 +2112,15 @@ void BAV::VulkanApplication::RecreateSwapChain()
     // high dynamic range monitor (or the other way around, I think).
     CreateSwapChain();
     CreateImageViews();
+    CreateDepthResources();
     CreateFramebuffers();
 }
 
 void BAV::VulkanApplication::CleanUpSwapChain() const
 {
+    vkDestroyImageView(m_LogicalDevice, m_DepthImageView, nullptr);
+    vmaDestroyImage(g_VmaAllocator, m_DepthImage, m_DepthImageAllocation);
+
     for(const VkFramebuffer& frameBuffer : m_SwapChainFramebuffers)
     {
         vkDestroyFramebuffer(m_LogicalDevice, frameBuffer, nullptr);
