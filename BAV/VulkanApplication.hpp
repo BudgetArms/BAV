@@ -127,7 +127,7 @@ namespace BAV
         [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
 
         [[nodiscard]] VkFormat FindDepthFormat() const;
-        [[nodiscard]] bool HasStencilComponent(VkFormat format) const;
+        [[nodiscard]] static bool HasStencilComponent(VkFormat format);
 
 
         GLFWwindow* m_Window{};

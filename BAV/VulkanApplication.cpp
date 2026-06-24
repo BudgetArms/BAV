@@ -17,7 +17,7 @@
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DDEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -2559,7 +2559,7 @@ std::vector<const char*> BAV::VulkanApplication::GetRequiredExtensions()
     return extensions;
 }
 
-BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(VkPhysicalDevice device) const
+BAV::QueueFamilyIndices BAV::VulkanApplication::FindQueueFamilies(const VkPhysicalDevice device) const
 {
     QueueFamilyIndices indices;
 
@@ -2874,7 +2874,7 @@ VkFormat BAV::VulkanApplication::FindDepthFormat() const
     );
 }
 
-bool BAV::VulkanApplication::HasStencilComponent(VkFormat format) const
+bool BAV::VulkanApplication::HasStencilComponent(const VkFormat format)
 {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
             format == VK_FORMAT_D24_UNORM_S8_UINT;
