@@ -24,6 +24,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <assimp/ai_assert.h>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+
 #define VMA_IMPLEMENTATION
 #define VMA_STATS_STRING_ENABLED 1
 #define VMA_CPP20 1
@@ -146,6 +150,22 @@ void BAV::VulkanApplication::Run()
     #else
     std::cout << "DEBUG\n" << '\n';
     #endif
+
+
+    const std::string modelPath = g_ResourceFolder.data() + std::string("/Models/VikingRoom.obj");
+    const aiScene* scene        = aiImportFile(modelPath.c_str(), 0);
+    if(scene)
+    {
+        std::cout << "scene loaded\n";
+
+        std::cout << "scene's name: " << scene->mName.C_Str() << '\n';
+        std::cout << "scene (object) contains " << scene->mNumMeshes << " meshes" << '\n';
+    }
+    else
+    {
+        std::cout << "scene not loaded\n";
+    }
+
 
     if constexpr(g_UseSlangShaders)
     {
