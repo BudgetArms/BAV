@@ -2775,20 +2775,19 @@ VkExtent2D BAV::VulkanApplication::ChooseSwapChainExtent(const VkSurfaceCapabili
     }
 }
 
-std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& filename)
+std::vector<char> BAV::VulkanApplication::ReadFile(const std::string& fileName)
 {
-    // ate: start reading from end of file
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if(!std::filesystem::exists(filename))
+    if(!std::filesystem::exists(fileName))
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed, File Not Found: ") + filename);
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed, File Not Found: ") + fileName);
     }
 
+    // ate: start reading from end of file
+    std::ifstream file(fileName, std::ios::ate | std::ios::binary);
 
     if(!file.is_open())
     {
-        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read the file: ") + filename);
+        throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to read the file: ") + fileName);
     }
 
     // std::ifstream::tellg() returns the current position of the input pointer.

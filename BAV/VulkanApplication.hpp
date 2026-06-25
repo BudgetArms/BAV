@@ -124,7 +124,7 @@ namespace BAV
             const std::vector<VkPresentModeKHR>& availablePresentModes);
         [[nodiscard]] VkExtent2D ChooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
-        [[nodiscard]] static std::vector<char> ReadFile(const std::string& filename);
+        [[nodiscard]] static std::vector<char> ReadFile(const std::string& fileName);
 
         [[nodiscard]] VkFormat FindDepthFormat() const;
         [[nodiscard]] static bool HasStencilComponent(VkFormat format);
