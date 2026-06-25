@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(RESOURCE_DIR "Resources")
 
 # Get Vulkan SDK
 find_package(Vulkan REQUIRED)
@@ -144,7 +145,7 @@ function(add_glsl_shader_target TARGET)
 
     cmake_parse_arguments("SHADER" "" "" "SOURCE" ${ARGN})
 
-    set(SHADERS_DIR "${CMAKE_CURRENT_LIST_DIR}/Shaders")
+    set(SHADERS_DIR "${CMAKE_CURRENT_LIST_DIR}/${RESOURCE_DIR}/Shaders")
     set(OUTPUT_FILE "${SHADERS_DIR}/${TARGET}.spv")
 
     # Compile Shaders
@@ -200,8 +201,8 @@ endforeach()
 
 
 file(GLOB GlslShaders
-    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${RESOURCE_DIR}/Shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${RESOURCE_DIR}/Shaders/*.frag"
 )
 
 foreach(GlslShader IN LISTS GlslShaders)
@@ -222,12 +223,7 @@ endforeach()
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/Shaders
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders
+    ${CMAKE_SOURCE_DIR}/${RESOURCE_DIR}
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/${RESOURCE_DIR}
 )
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/Textures
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/Textures
-)
