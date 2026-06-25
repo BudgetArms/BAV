@@ -115,36 +115,6 @@ struct UniformBufferObject
     glm::mat4 Proj{};
 };
 
-// constexpr std::array<Vertex, 3> g_Vertices =
-// {
-//     Vertex({ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
-//     Vertex({ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}),
-//     Vertex({-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}),
-// };
-
-// constexpr std::array<Vertex, 4> g_Vertices =
-// {
-//     Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }),
-//     Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }),
-//     Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }),
-//     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }),
-// };
-
-// constexpr std::array g_Vertices =
-// {
-//     Vertex({ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f }),
-//     Vertex({ 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }),
-//     Vertex({ 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }),
-//     Vertex({ -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f })
-// };
-//
-// constexpr std::array g_Vertices =
-// {
-//     Vertex({ -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }),
-//     Vertex({ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f }),
-//     Vertex({ 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }),
-//     Vertex({ -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f })
-// };
 
 constexpr std::array g_Vertices =
 {
@@ -159,13 +129,7 @@ constexpr std::array g_Vertices =
     Vertex({ -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f })
 };
 
-
-// constexpr std::array<uint16_t, 6> g_Indices
-// {
-//     0, 1, 2, 2, 3, 0
-// };
-
-constexpr std::array<uint16_t, 12> g_Indices
+constexpr std::array<uint32_t, 12> g_Indices
 {
     0, 1, 2, 2, 3, 0,
     4, 5, 6, 6, 7, 4
@@ -1492,7 +1456,7 @@ void BAV::VulkanApplication::CreateCommandPool()
 
 void BAV::VulkanApplication::CreateVertexBuffer()
 {
-    constexpr VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
+    VkDeviceSize bufferSize = sizeof(Vertex) * g_Vertices.size();
 
 
     VkBuffer stagingBuffer{};
@@ -1711,7 +1675,7 @@ void BAV::VulkanApplication::CreateTextureSampler()
 
 void BAV::VulkanApplication::CreateIndexBuffer()
 {
-    constexpr VkDeviceSize bufferSize = sizeof(uint16_t) * g_Indices.size();
+    VkDeviceSize bufferSize = sizeof(uint32_t) * g_Indices.size();
 
     VkBuffer stagingBuffer{};
     VmaAllocation stagingBufferAllocation{};
@@ -2227,7 +2191,7 @@ void BAV::VulkanApplication::RecordCommandBuffer(const VkCommandBuffer& commandB
         constexpr VkDeviceSize offsets[] = { 0 };
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
                                 0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
