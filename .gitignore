@@ -438,4 +438,9 @@ FodyWeavers.xsd
 /cmake-build-release/
 /cmake-build-debug/
 /.idea
+
+
+# Vulkan Project specific in-/excludes
 *.spv
+!/Resources/Models/*.obj
+
