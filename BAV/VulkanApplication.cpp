@@ -135,6 +135,10 @@ constexpr std::array<uint32_t, 12> g_Indices
     4, 5, 6, 6, 7, 4
 };
 
+
+constexpr std::string_view g_ResourceFolder{ "Resources" };
+
+
 void BAV::VulkanApplication::Run()
 {
     #ifdef NDEBUG
@@ -1064,8 +1068,8 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
 
     if constexpr(g_UseSlangShaders)
     {
-        const std::vector<char> shaderCode = ReadFile("Shaders/RedTriangleSlang.spv");
-
+        const std::vector<char> shaderCode = ReadFile(
+            g_ResourceFolder.data() + std::string("/Shaders/RedTriangleSlang.spv"));
 
         slangShaderModule = CreateShaderModule(shaderCode);
 
@@ -1077,23 +1081,11 @@ void BAV::VulkanApplication::CreateGraphicsPipeline()
     }
     else
     {
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/RedTriangleVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/RedTriangleFrag.spv");
+        const std::vector<char> vertShaderCode = ReadFile(
+            g_ResourceFolder.data() + std::string("/Shaders/ShaderTexture3DVert.spv"));
 
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ColorTriangleVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ColorTriangleFrag.spv");
-
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureColorVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureColorFrag.spv");
-
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureFrag.spv");
-
-        // const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorVert.spv");
-        // const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTextureCombinedColorFrag.spv");
-
-        const std::vector<char> vertShaderCode = ReadFile("Shaders/ShaderTexture3DVert.spv");
-        const std::vector<char> fragShaderCode = ReadFile("Shaders/ShaderTexture3DFrag.spv");
+        const std::vector<char> fragShaderCode = ReadFile(
+            g_ResourceFolder.data() + std::string("/Shaders/ShaderTexture3DFrag.spv"));
 
 
         vertShaderModule = CreateShaderModule(vertShaderCode);
@@ -1526,19 +1518,21 @@ void BAV::VulkanApplication::CreateDepthResources()
     m_DepthImageView = CreateImageView(m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
+// TODO: add parameter to path instead
 void BAV::VulkanApplication::CreateTextureImage()
 {
     int textureWidth{};
     int textureHeight{};
     int textureChannels{};
-    stbi_uc* textureData = stbi_load("Textures/ExampleTexture.jpg", &textureWidth, &textureHeight,
-                                     &textureChannels, STBI_rgb_alpha);
+
+    const std::string texturePath = g_ResourceFolder.data() + std::string("/Textures/ExampleTexture.jpg");
+    stbi_uc* textureData          = stbi_load(texturePath.c_str(), &textureWidth, &textureHeight, &textureChannels,
+                                     STBI_rgb_alpha);
     if(!textureData)
     {
         throw std::runtime_error(FUNCTION_NAME + std::string(" Failed to load texture!"));
     }
 
-    std::cout << "Texture Channel amount: " << textureChannels << '\n';
     const VkDeviceSize imageSize = textureWidth * textureHeight * 4;
 
     VkBuffer stagingBuffer{};
